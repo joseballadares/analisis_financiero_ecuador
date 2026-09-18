@@ -108,7 +108,7 @@ export type PeerGroup = {
   benchmark: Benchmark;
 };
 
-const VEN = "COALESCE(NULLIF((metrics->>'ingresos_ventas')::float8, 0), (metrics->>'ingresos_totales')::float8)";
+export const VEN = "COALESCE(NULLIF((metrics->>'ingresos_ventas')::float8, 0), (metrics->>'ingresos_totales')::float8)";
 const BENCHMARK_SIZE = 500;
 const MIN_GROUP = 30;
 

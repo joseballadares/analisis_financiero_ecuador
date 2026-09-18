@@ -22,6 +22,15 @@ export default function Home() {
         <Link href="/sector" className="rounded-full border border-border px-3 py-1 hover:border-brand hover:text-brand transition-colors">
           Análisis por sector
         </Link>
+        <Link href="/buscar" className="rounded-full border border-border px-3 py-1 hover:border-brand hover:text-brand transition-colors">
+          Búsqueda avanzada
+        </Link>
+        <Link href="/provincias" className="rounded-full border border-border px-3 py-1 hover:border-brand hover:text-brand transition-colors">
+          Provincias
+        </Link>
+        <Link href="/acerca" className="rounded-full border border-border px-3 py-1 hover:border-brand hover:text-brand transition-colors">
+          Metodología
+        </Link>
       </div>
     </div>
   );

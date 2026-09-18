@@ -34,12 +34,21 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               </span>
               Ecuador Financiero
             </Link>
-            <nav className="flex items-center gap-6 text-sm text-muted">
+            <nav className="flex items-center gap-4 sm:gap-6 text-sm text-muted">
+              <Link href="/buscar" className="hover:text-foreground transition-colors">
+                Buscar
+              </Link>
               <Link href="/ranking" className="hover:text-foreground transition-colors">
                 Ranking
               </Link>
               <Link href="/sector" className="hover:text-foreground transition-colors">
                 Sectores
+              </Link>
+              <Link href="/provincias" className="hidden sm:inline hover:text-foreground transition-colors">
+                Provincias
+              </Link>
+              <Link href="/acerca" className="hidden sm:inline hover:text-foreground transition-colors">
+                Metodología
               </Link>
             </nav>
           </div>
@@ -48,7 +57,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <footer className="border-t border-border mt-16">
           <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 text-xs text-muted">
             Datos: Superintendencia de Compañías, Valores y Seguros del Ecuador. Este sitio
-            es un proyecto independiente de análisis financiero, sin afiliación oficial.
+            es un proyecto independiente de análisis financiero, sin afiliación oficial.{" "}
+            <Link href="/acerca" className="underline hover:text-foreground">
+              Metodología y fuentes
+            </Link>
+            .
           </div>
         </footer>
       </body>

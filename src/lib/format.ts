@@ -49,3 +49,41 @@ export function formatRatioValue(
   if (PERCENT_KEYS.has(key)) return formatPercent(value, percentDecimals);
   return formatNumber(value);
 }
+
+export function formatCompactMoney(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return "—";
+  const abs = Math.abs(value);
+  const sign = value < 0 ? "-" : "";
+  const fmt = (n: number) =>
+    new Intl.NumberFormat("es-EC", { maximumFractionDigits: 1 }).format(n);
+  if (abs >= 1e9) return `${sign}$${fmt(abs / 1e9)} mil M`;
+  if (abs >= 1e6) return `${sign}$${fmt(abs / 1e6)} M`;
+  if (abs >= 1e3) return `${sign}$${fmt(abs / 1e3)} K`;
+  return `${sign}$${fmt(abs)}`;
+}
+
+const SEGMENT_NAMES: Record<number, string> = {
+  1: "Microempresa",
+  2: "Pequeña",
+  3: "Mediana",
+  4: "Grande",
+};
+
+export function segmentName(code: number | null | undefined): string {
+  return (code != null && SEGMENT_NAMES[code]) || "Sin clasificar";
+}
+
+export function titleCase(s: string | null | undefined): string {
+  if (!s) return "—";
+  return s
+    .toLowerCase()
+    .split(" ")
+    .map((w) => (["de", "los", "del", "la", "las"].includes(w) ? w : w.charAt(0).toUpperCase() + w.slice(1)))
+    .join(" ");
+}
+
+export function sentenceCase(s: string | null | undefined): string {
+  if (!s) return "";
+  const t = s.trim().replace(/\.$/, "").toLowerCase();
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
