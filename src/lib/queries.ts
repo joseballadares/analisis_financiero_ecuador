@@ -302,3 +302,26 @@ export async function getCatalogNames(catalogIds: number[]): Promise<Record<numb
   }
   return out;
 }
+
+
+// Número de empresas con posición en el ranking nacional, por año (para "puesto X de N").
+export function getRankingUniverse(): Promise<Record<number, number>> {
+  return memo("universe", async () => {
+    const database = db();
+    const rows = await database.sql<{ anio: number; n: number }>`
+      SELECT anio, count(*)::int AS n FROM company_year_financials
+      WHERE posicion_general IS NOT NULL GROUP BY anio
+    `;
+    return Object.fromEntries(rows.map((r) => [r.anio, r.n]));
+  });
+}
+
+export async function getCiiuDescription(code: string | null): Promise<string | null> {
+  if (!code) return null;
+  const database = db();
+  for (const c of [code, code.slice(0, 5), code.slice(0, 4)]) {
+    const [row] = await database.sql<{ descripcion: string }>`SELECT descripcion FROM ciiu WHERE codigo = ${c}`;
+    if (row) return row.descripcion;
+  }
+  return null;
+}

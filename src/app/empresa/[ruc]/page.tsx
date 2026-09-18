@@ -7,15 +7,17 @@ import {
   getPeerGroup,
   type CompanyYearFinancial,
 } from "@/lib/db";
-import { getCatalogNames, getCompanyBalanceRows, getSegmentShare } from "@/lib/queries";
-import { formatMoney, formatNumber, formatPercent, titleCase } from "@/lib/format";
+import { getCatalogNames, getCiiuDescription, getCompanyBalanceRows, getRankingUniverse, getSegmentShare } from "@/lib/queries";
+import { formatMoney, formatPercent, segmentName, sentenceCase, titleCase } from "@/lib/format";
 import RatiosTable from "@/components/RatiosTable";
+import RatiosCards from "@/components/RatiosCards";
+import ViewToggle from "@/components/ViewToggle";
 import StarRatios from "@/components/StarRatios";
 import BalanceSheetView from "@/components/BalanceSheetView";
 import PeersTab from "@/components/PeersTab";
 import StatementsView from "@/components/StatementsView";
 import SegmentCard from "@/components/SegmentCard";
-import { BarChart, LineChart } from "@/components/charts";
+import ResumenTab from "@/components/ResumenTab";
 import { fillFromBalance, needsBalanceFill, isInactive, derivedRatios, STRUCTURE_KEYS } from "@/lib/derived";
 import { ratiosByYear } from "@/lib/star";
 import Tabs from "@/components/Tabs";
@@ -68,11 +70,13 @@ export default async function EmpresaPage({
   const ownIngresos = (m.ingresos_ventas ?? 0) > 0 ? (m.ingresos_ventas as number) : (m.ingresos_totales ?? 0);
   const prevYear = filled.find((f) => f.anio === current.anio - 1);
 
-  const [balanceRows, segmentShare] = await Promise.all([
+  const [balanceRows, segmentShare, universe, ciiuDesc] = await Promise.all([
     getCompanyBalanceRows(company.expediente),
     current.ciiu_n6 && !inactive
       ? getSegmentShare({ ciiuN6: current.ciiu_n6, anio: current.anio, ingresos: ownIngresos })
       : Promise.resolve(null),
+    getRankingUniverse(),
+    getCiiuDescription(current.ciiu_n6),
   ]);
 
   const byYearMap = ratiosByYear(filled, balanceRows);
@@ -111,6 +115,30 @@ export default async function EmpresaPage({
       : Promise.resolve({} as Record<string, string>);
   const names = await niifNames;
 
+  const rankNow = current.posicion_general;
+  const facts = [
+    { label: "RUC", value: company.ruc },
+    { label: "Tipo de compañía", value: company.tipo?.trim() || "—" },
+    { label: "Provincia", value: titleCase(company.provincia?.trim()) },
+    {
+      label: "Actividad principal",
+      value: current.ciiu_n6 ? (
+        <>
+          <span className="font-mono text-xs">{current.ciiu_n6}</span>
+          {ciiuDesc ? ` · ${sentenceCase(ciiuDesc)}` : ""}
+        </>
+      ) : (
+        "—"
+      ),
+    },
+    { label: "Tamaño (Superintendencia)", value: segmentName(current.cod_segmento) },
+    { label: "Mercado de Valores", value: filled.some((f) => f.metrics.cia_imvalores === 1) ? "Sí, participa" : "No" },
+    { label: `Empleados ${current.anio}`, value: m.n_empleados ? Number(m.n_empleados).toLocaleString("es-EC") : "—" },
+    {
+      label: `Ranking nacional ${current.anio}`,
+      value: rankNow ? `#${rankNow.toLocaleString("es-EC")} de ${(universe[current.anio] ?? 0).toLocaleString("es-EC")}` : "—",
+    },
+  ];
   const dist = inactive ? {} : (peerGroup?.benchmark.dist ?? {});
   const structureOnly = inactive && (m.activos ?? 0) >= 10000;
 
@@ -176,6 +204,10 @@ export default async function EmpresaPage({
               content: (
                 <ResumenTab
                   financials={filled}
+                  byYear={byYear}
+                  currentYear={current.anio}
+                  universe={universe}
+                  facts={facts}
                   segment={
                     segmentShare && ownIngresos > 0 ? (
                       <SegmentCard
@@ -216,12 +248,25 @@ export default async function EmpresaPage({
                         </p>
                       )}
                       <div className="mt-4">
-                        <RatiosTable
-                          years={tableYears}
-                          byYear={byYear}
-                          dist={dist}
-                          only={structureOnly ? STRUCTURE_KEYS : undefined}
-                          showBenchmark={!inactive}
+                        <ViewToggle
+                          cards={
+                            <RatiosCards
+                              years={tableYears}
+                              byYear={byYear}
+                              dist={dist}
+                              only={structureOnly ? STRUCTURE_KEYS : undefined}
+                              showBenchmark={!inactive}
+                            />
+                          }
+                          table={
+                            <RatiosTable
+                              years={tableYears}
+                              byYear={byYear}
+                              dist={dist}
+                              only={structureOnly ? STRUCTURE_KEYS : undefined}
+                              showBenchmark={!inactive}
+                            />
+                          }
                         />
                       </div>
                       {!structureOnly && (
@@ -291,96 +336,6 @@ function Stat({ label, value, delta }: { label: string; value: string; delta?: n
           {delta >= 0 ? "▲" : "▼"} {formatPercent(Math.abs(delta), 1)} vs año anterior
         </div>
       )}
-    </div>
-  );
-}
-
-function ResumenTab({ financials, segment }: { financials: CompanyYearFinancial[]; segment: React.ReactNode }) {
-  const sorted = [...financials].sort((a, b) => a.anio - b.anio);
-  const trend = sorted
-    .filter((f) => f.anio >= 2015 && ((f.metrics.ingresos_ventas ?? 0) > 0 || (f.metrics.activos ?? 0) > 0))
-    .slice(-10);
-  const cats = trend.map((f) => String(f.anio));
-  const d = trend.map((f) => derivedRatios(f.metrics));
-  const spansBreak = trend.some((f) => f.anio <= 2021) && trend.some((f) => f.anio >= 2022);
-  return (
-    <div className="space-y-8">
-      {trend.length >= 2 && (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card title="Ingresos y utilidad neta">
-            <BarChart
-              categories={cats}
-              series={[
-                { name: "Ingresos", color: "var(--brand)", values: trend.map((f) => f.metrics.ingresos_ventas ?? null) },
-                { name: "Utilidad neta", color: "var(--accent)", values: trend.map((f) => f.metrics.utilidad_neta ?? null) },
-              ]}
-            />
-          </Card>
-          <Card title="Activos y patrimonio">
-            <BarChart
-              categories={cats}
-              series={[
-                { name: "Activos", color: "var(--brand)", values: trend.map((f) => f.metrics.activos ?? null) },
-                { name: "Patrimonio", color: "var(--accent)", values: trend.map((f) => f.metrics.patrimonio ?? null) },
-              ]}
-            />
-          </Card>
-          <Card title="Margen neto y ROE">
-            <LineChart
-              categories={cats}
-              format={(v) => formatPercent(v, 0)}
-              series={[
-                { name: "Margen neto", color: "var(--brand)", values: d.map((x) => x.rent_neta_ventas ?? null) },
-                { name: "ROE", color: "var(--accent)", values: d.map((x) => x.roe ?? null) },
-              ]}
-            />
-          </Card>
-          {segment}
-          {spansBreak && (
-            <p className="text-xs text-muted lg:col-span-2">
-              Hasta 2021 los datos provienen del formulario tributario del SRI y desde 2022 de estados NIIF; las
-              series antes y después de 2022 pueden no ser comparables línea por línea.
-            </p>
-          )}
-        </div>
-      )}
-      {trend.length < 2 && segment}
-
-      <div className="overflow-x-auto rounded-xl border border-border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-surface text-left text-xs uppercase tracking-wide text-muted">
-              <th className="px-4 py-2.5">Año</th>
-              <th className="px-4 py-2.5 text-right">Ingresos</th>
-              <th className="px-4 py-2.5 text-right">Activos</th>
-              <th className="px-4 py-2.5 text-right">Patrimonio</th>
-              <th className="px-4 py-2.5 text-right">Utilidad neta</th>
-              <th className="px-4 py-2.5 text-right">Empleados</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((f) => (
-              <tr key={f.anio} className="border-b border-border last:border-b-0">
-                <td className="px-4 py-2.5 font-medium">{f.anio}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{formatMoney(f.metrics.ingresos_ventas as number)}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{formatMoney(f.metrics.activos as number)}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{formatMoney(f.metrics.patrimonio as number)}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{formatMoney(f.metrics.utilidad_neta as number)}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{formatNumber(f.metrics.n_empleados as number, 0)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-xl border border-border bg-surface p-4">
-      <h3 className="mb-2 text-sm font-semibold">{title}</h3>
-      {children}
     </div>
   );
 }

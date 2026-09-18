@@ -22,17 +22,17 @@ export default function RatiosTable({
   const current = years[years.length - 1];
   return (
     <div className="overflow-x-auto rounded-xl border border-border">
-      <table className="w-full text-sm">
+      <table className="w-full text-xs">
         <thead>
           <tr className="border-b border-border bg-surface text-xs uppercase tracking-wide text-muted">
-            <th className="sticky left-0 z-10 min-w-56 bg-surface px-4 py-2.5 text-left">Indicador</th>
+            <th className="sticky left-0 z-10 min-w-44 bg-surface px-3 py-2 text-left">Indicador</th>
             {years.map((y) => (
-              <th key={y} className={`px-3 py-2.5 text-right ${y === current ? "text-foreground" : ""}`}>
+              <th key={y} className={`px-2 py-2 text-right ${y === current ? "text-foreground" : ""}`}>
                 {y}
               </th>
             ))}
-            <th className="px-3 py-2.5 text-center">Tendencia</th>
-            {showBenchmark && <th className="px-3 py-2.5 text-center">Vs pares</th>}
+            <th className="px-2 py-2 text-center">Tendencia</th>
+            {showBenchmark && <th className="px-2 py-2 text-center">Vs pares</th>}
           </tr>
         </thead>
         <tbody>
@@ -58,7 +58,7 @@ export default function RatiosTable({
                   });
                   return (
                     <tr key={k} className={idx % 2 === 0 ? "bg-surface" : "bg-background"} title={info.formula}>
-                      <td className={`sticky left-0 z-10 px-4 py-2.5 ${idx % 2 === 0 ? "bg-surface" : "bg-background"}`}>
+                      <td className={`sticky left-0 z-10 px-3 py-2 ${idx % 2 === 0 ? "bg-surface" : "bg-background"}`}>
                         <div className="flex items-center gap-2">
                           <span>{info.nombre}</span>
                           {flag && (
@@ -71,23 +71,23 @@ export default function RatiosTable({
                             </span>
                           )}
                         </div>
-                        <div className="text-xs text-muted">{info.formula}</div>
+                        <div className="text-[10px] leading-tight text-muted">{info.formula}</div>
                       </td>
                       {years.map((y, i) => (
                         <td
                           key={y}
-                          className={`px-3 py-2.5 text-right tabular-nums whitespace-nowrap ${
+                          className={`px-2 py-2 text-right tabular-nums whitespace-nowrap ${
                             y === current ? "font-semibold" : "text-muted"
                           }`}
                         >
                           {formatRatioValue(k, series[i], 1)}
                         </td>
                       ))}
-                      <td className="px-3 py-2.5 text-center">
-                        <Sparkline values={series} title={`${info.nombre}: ${years[0]}–${current}`} />
+                      <td className="px-2 py-2 text-center">
+                        <Sparkline values={series} width={64} title={`${info.nombre}: ${years[0]}–${current}`} />
                       </td>
                       {showBenchmark && (
-                        <td className="px-3 py-2.5 text-center">
+                        <td className="px-2 py-2 text-center">
                           <Semaforo ratioKey={k} dist={dist[k]} dir={info.direction} />
                         </td>
                       )}
