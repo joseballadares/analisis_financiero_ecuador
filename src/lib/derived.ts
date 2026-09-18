@@ -114,12 +114,15 @@ export function fillFromBalance(m: Metrics, data: Record<string, number>, catalo
   const act = data["1"];
   if (!ok(act) || act <= 0) return m;
   const num = (x: number | undefined) => (ok(x) ? x : null);
+  const keep = new Set(["n_empleados", "cia_imvalores", "id_estado_financiero"]);
+  const base: Metrics = {};
+  for (const [k, v] of Object.entries(m)) base[k] = keep.has(k) ? v : null;
   const ven = num(data["401"]);
   const cost = num(data["501"]);
   const ac = num(data["101"]);
   const pc = num(data["201"]);
   return {
-    ...m,
+    ...base,
     activos: act,
     patrimonio: num(data["3"]),
     ingresos_ventas: ven,
