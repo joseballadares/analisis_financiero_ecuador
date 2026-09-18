@@ -131,7 +131,7 @@ export default function ResumenTab({
               series={[
                 { name: "Margen bruto", color: "var(--brand)", values: mask(val("margen_bruto")) },
                 { name: "Margen operacional", color: "var(--accent)", values: mask(val("margen_operacional")) },
-                { name: "Margen neto", color: "var(--positive)", values: val("rent_neta_ventas") },
+                { name: "Margen neto", color: "var(--negative)", values: val("rent_neta_ventas") },
               ]}
             />
           </Card>
