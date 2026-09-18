@@ -1,5 +1,5 @@
 import { getDatabase } from "@netlify/database";
-import { derivedRatios, MIN_ACTIVE_REVENUE } from "@/lib/derived";
+import { MIN_ACTIVE_REVENUE } from "@/lib/derived";
 
 export function db() {
   return getDatabase();
@@ -74,23 +74,6 @@ export async function searchCompanies(query: string, limit = 20): Promise<Compan
   `;
 }
 
-const PEER_METRICS = [
-  "roe",
-  "roa",
-  "rent_neta_ventas",
-  "margen_bruto",
-  "liquidez_corriente",
-  "end_activo",
-] as const;
-
-export type PeerStat = {
-  key: string;
-  value: number | null;
-  median: number | null;
-  percentile: number | null;
-  n: number;
-};
-
 export type PeerRow = {
   expediente: number;
   ruc: string | null;
@@ -104,7 +87,6 @@ export type PeerGroup = {
   total: number;
   sizeRank: number;
   peers: PeerRow[];
-  stats: PeerStat[];
   benchmark: Benchmark;
 };
 
@@ -112,45 +94,82 @@ export const VEN = "COALESCE(NULLIF((metrics->>'ingresos_ventas')::float8, 0), (
 const BENCHMARK_SIZE = 500;
 const MIN_GROUP = 30;
 
-export type Benchmark = { medians: Record<string, number | null>; n: number };
+export type RatioDist = {
+  n: number;
+  median: number | null;
+  p25: number | null;
+  p75: number | null;
+  below: number;
+  own: number | null;
+};
 
-// Mediana de ratios de las (hasta 500) empresas ACTIVAS del grupo CIIU: las de ingresos más cercanos
-// a la empresa (nearIngresos) o, sin empresa de referencia, las 500 de mayores ingresos. Excluir
-// empresas inactivas/diminutas evita que las medianas se contaminen (p. ej. margen bruto 100%).
+export type Benchmark = {
+  medians: Record<string, number | null>;
+  n: number;
+  dist: Record<string, RatioDist>;
+};
+
+// Distribución de ratios (mediana, cuartiles y percentil de la empresa) de las (hasta 500) empresas
+// ACTIVAS del grupo CIIU: las de ingresos más cercanos a la empresa (nearIngresos) o, sin empresa de
+// referencia, las 500 de mayores ingresos. Excluir empresas inactivas/diminutas evita que las medianas
+// se contaminen (p. ej. margen bruto 100%). Los ratios que dependen del balance NIIF (DIO, DPO, CCC,
+// ROIC, deuda neta) se calculan solo con las empresas que tienen balance NIIF ese año.
 export async function getBenchmarkMedians(params: {
   prefix: string;
   anio: number;
   nearIngresos?: number | null;
   excludeExpediente?: number;
+  companyValues?: Record<string, number>;
 }): Promise<Benchmark> {
   const database = db();
   const { prefix, anio } = params;
   const near = typeof params.nearIngresos === "number" && params.nearIngresos > 0;
   const target = near ? (params.nearIngresos as number) : 1;
   const exclude = params.excludeExpediente ?? -1;
+  const own = JSON.stringify(params.companyValues ?? {});
   const ven = database.sql.raw(VEN);
   const keyList = database.sql.raw(SOURCE_SECTOR_KEYS.map((k) => `'${k}'`).join(","));
-  const rows = await database.sql<{ key: string; median: number | null }>`
+  const rows = await database.sql<{
+    key: string;
+    n: number;
+    median: number | null;
+    p25: number | null;
+    p75: number | null;
+    below: number;
+    own: number | null;
+  }>`
     WITH base AS (
-      SELECT metrics FROM company_year_financials
+      SELECT expediente, metrics FROM company_year_financials
       WHERE anio = ${anio} AND ciiu_n6 LIKE ${prefix + "%"} AND expediente <> ${exclude}
         AND ${ven} >= ${MIN_ACTIVE_REVENUE}::float8 AND (metrics->>'activos')::float8 > 0
       ORDER BY CASE WHEN ${near}::boolean THEN abs(ln(${ven}) - ln(${target}::float8)) ELSE -${ven} END
       LIMIT ${BENCHMARK_SIZE}
     ), g AS (
-      SELECT (metrics->>'utilidad_neta')::float8 AS un,
-             (metrics->>'patrimonio')::float8 AS pat,
-             (metrics->>'activos')::float8 AS act,
+      SELECT (base.metrics->>'utilidad_neta')::float8 AS un,
+             (base.metrics->>'patrimonio')::float8 AS pat,
+             (base.metrics->>'activos')::float8 AS act,
              ${ven} AS ven,
-             (metrics->>'gastos_admin_ventas')::float8 AS gav,
-             (metrics->>'gastos_financieros')::float8 AS gfin,
-             (metrics->>'rot_cartera')::float8 AS rc,
-             (metrics->>'rot_activo_fijo')::float8 AS raf,
-             (metrics->>'utilidad_an_imp')::float8 AS uai,
-             (metrics->>'costos_ventas_prod')::float8 AS cvp,
-             COALESCE((metrics->>'ingresos_ventas')::float8, 0) - COALESCE((metrics->>'costos_ventas_prod')::float8, 0)
-               - COALESCE((metrics->>'gastos_admin_ventas')::float8, 0) AS uo
+             (base.metrics->>'gastos_admin_ventas')::float8 AS gav,
+             (base.metrics->>'gastos_financieros')::float8 AS gfin,
+             (base.metrics->>'rot_cartera')::float8 AS rc,
+             (base.metrics->>'rot_activo_fijo')::float8 AS raf,
+             (base.metrics->>'utilidad_an_imp')::float8 AS uai,
+             (base.metrics->>'costos_ventas_prod')::float8 AS cvp,
+             COALESCE((base.metrics->>'depreciaciones')::float8, 0) + COALESCE((base.metrics->>'amortizaciones')::float8, 0) AS da,
+             COALESCE((base.metrics->>'ingresos_ventas')::float8, 0) - COALESCE((base.metrics->>'costos_ventas_prod')::float8, 0)
+               - COALESCE((base.metrics->>'gastos_admin_ventas')::float8, 0) AS uo,
+             (b.expediente IS NOT NULL) AS hasb,
+             (b.data->>'10103')::float8 AS inv,
+             (b.data->>'20103')::float8 AS cxp,
+             (b.data->>'10101')::float8 AS cash,
+             (b.data->>'201')::float8 AS pc,
+             COALESCE((b.data->>'20102')::float8, 0) + COALESCE((b.data->>'20104')::float8, 0)
+               + COALESCE((b.data->>'20106')::float8, 0) + COALESCE((b.data->>'20109')::float8, 0)
+               + COALESCE((b.data->>'20201')::float8, 0) + COALESCE((b.data->>'20203')::float8, 0)
+               + COALESCE((b.data->>'20205')::float8, 0) AS debt
       FROM base
+      LEFT JOIN balance_line_items b
+        ON b.expediente = base.expediente AND b.anio = ${anio} AND b.catalog_id = 3
     ), m AS (
       SELECT k.key, k.v
       FROM g CROSS JOIN LATERAL (VALUES
@@ -168,29 +187,50 @@ export async function getBenchmarkMedians(params: {
         ('margen_operacional', CASE WHEN g.ven > 0 THEN g.uo / g.ven END),
         ('rent_ope_patrimonio', CASE WHEN g.pat > 0 THEN g.uo / g.pat END),
         ('rent_ope_activo', CASE WHEN g.act > 0 THEN g.uo / g.act END),
-        ('cobertura_interes', CASE WHEN g.gfin > 0 THEN g.uo / g.gfin END),
         ('rent_neta_activo', CASE WHEN g.act > 0 THEN g.un / g.act END),
+        ('cobertura_interes', CASE WHEN g.gfin > 0 THEN g.uo / g.gfin END),
         ('end_activo_fijo', CASE WHEN g.pat > 0 AND g.ven > 0 AND g.raf > 0 THEN g.pat * g.raf / g.ven END),
         ('apalancamiento_financiero', CASE WHEN g.uai IS NOT NULL AND g.uai <> 0 AND g.uai + g.gfin > 0 AND g.pat > 0 AND g.act > 0
-                                          THEN (g.uai / g.pat) / ((g.uai + g.gfin) / g.act) END)
+                                          THEN (g.uai / g.pat) / ((g.uai + g.gfin) / g.act) END),
+        ('margen_ebitda', CASE WHEN g.ven > 0 THEN (g.uo + g.da) / g.ven END),
+        ('cobertura_ebitda', CASE WHEN g.gfin > 0 THEN (g.uo + g.da) / g.gfin END),
+        ('dio', CASE WHEN g.hasb AND g.cvp > 0 AND g.inv IS NOT NULL THEN g.inv / g.cvp * 365 END),
+        ('per_med_pago', CASE WHEN g.hasb AND g.cvp > 0 AND g.cxp > 0 THEN g.cxp / g.cvp * 365 END),
+        ('ccc', CASE WHEN g.hasb AND g.cvp > 0 AND g.rc > 0 AND g.inv IS NOT NULL AND g.cxp > 0
+                     THEN 365 / g.rc + g.inv / g.cvp * 365 - g.cxp / g.cvp * 365 END),
+        ('roic', CASE WHEN g.hasb AND g.ven > 0 AND (g.debt + g.pat - COALESCE(g.cash, 0)) > 0
+                      THEN g.uo * 0.75 / (g.debt + g.pat - COALESCE(g.cash, 0)) END),
+        ('deuda_neta_ebitda', CASE WHEN g.hasb AND (g.uo + g.da) > 0 THEN (g.debt - COALESCE(g.cash, 0)) / (g.uo + g.da) END),
+        ('razon_inmediata', CASE WHEN g.hasb AND g.pc > 0 AND g.cash IS NOT NULL THEN g.cash / g.pc END)
       ) AS k(key, v)
       WHERE k.v IS NOT NULL
     ), s AS (
       SELECT e.key, e.value::float8 AS v
       FROM base b, jsonb_each_text(b.metrics) AS e
       WHERE e.key IN (${keyList}) AND e.value IS NOT NULL AND e.value::float8 <> 0
-    )
-    SELECT key, percentile_cont(0.5) WITHIN GROUP (ORDER BY v) AS median
+    ), cv AS (SELECT ${own}::jsonb AS c)
+    SELECT x.key, count(*)::int AS n,
+           percentile_cont(0.5) WITHIN GROUP (ORDER BY x.v) AS median,
+           percentile_cont(0.25) WITHIN GROUP (ORDER BY x.v) AS p25,
+           percentile_cont(0.75) WITHIN GROUP (ORDER BY x.v) AS p75,
+           (count(*) FILTER (WHERE x.v < (cv.c->>x.key)::float8))::int AS below,
+           max((cv.c->>x.key)::float8) AS own
     FROM (SELECT key, v FROM m UNION ALL SELECT key, v FROM s UNION ALL SELECT '__n', count(*)::float8 FROM base) x
-    GROUP BY key
+    CROSS JOIN cv
+    GROUP BY x.key
   `;
-  const medians: Record<string, number | null> = { per_med_pago: null };
+  const medians: Record<string, number | null> = {};
+  const dist: Record<string, RatioDist> = {};
   let n = 0;
   for (const r of rows) {
-    if (r.key === "__n") n = r.median ?? 0;
-    else medians[r.key] = r.median;
+    if (r.key === "__n") {
+      n = r.median ?? 0;
+      continue;
+    }
+    medians[r.key] = r.median;
+    dist[r.key] = { n: r.n, median: r.median, p25: r.p25, p75: r.p75, below: r.below, own: r.own };
   }
-  return { medians, n };
+  return { medians, n, dist };
 }
 
 export async function getPeerGroup(params: {
@@ -198,6 +238,7 @@ export async function getPeerGroup(params: {
   anio: number;
   ciiuN6: string | null;
   metrics: Metrics;
+  ratioValues?: Record<string, number>;
 }): Promise<PeerGroup | null> {
   const { expediente, anio, ciiuN6, metrics } = params;
   const ingresos = (metrics.ingresos_ventas ?? 0) > 0 ? (metrics.ingresos_ventas as number) : (metrics.ingresos_totales ?? 0);
@@ -232,14 +273,7 @@ export async function getPeerGroup(params: {
   if (total === 0) return null;
 
   const like = chosen.prefix + "%";
-  const own = derivedRatios(metrics);
-  const companyValues: Record<string, number> = {};
-  for (const k of PEER_METRICS) {
-    const v = own[k];
-    if (typeof v === "number") companyValues[k] = v;
-  }
-
-  const [peers, stats, benchmark] = await Promise.all([
+  const [peers, benchmark] = await Promise.all([
     database.sql<PeerRow>`
       SELECT c.expediente, c.ruc, c.nombre, f.metrics
       FROM company_year_financials f
@@ -249,43 +283,15 @@ export async function getPeerGroup(params: {
       ORDER BY abs(ln(${venF}) - ln(${ingresos}::float8))
       LIMIT 10
     `,
-    database.sql<{ key: string; n: number; median: number | null; below: number }>`
-      WITH base AS (
-        SELECT metrics FROM company_year_financials
-        WHERE anio = ${anio} AND ciiu_n6 LIKE ${like} AND expediente <> ${expediente}
-          AND ${ven} >= ${MIN_ACTIVE_REVENUE}::float8 AND (metrics->>'activos')::float8 > 0
-        ORDER BY abs(ln(${ven}) - ln(${ingresos}::float8))
-        LIMIT ${BENCHMARK_SIZE}
-      ), g AS (
-        SELECT (metrics->>'utilidad_neta')::float8 AS un,
-               (metrics->>'patrimonio')::float8 AS pat,
-               (metrics->>'activos')::float8 AS act,
-               ${ven} AS ing,
-               (metrics->>'margen_bruto')::float8 AS mb,
-               (metrics->>'costos_ventas_prod')::float8 AS cvp,
-               (metrics->>'liquidez_corriente')::float8 AS liq
-        FROM base
-      ), m AS (
-        SELECT k.key, k.v
-        FROM g CROSS JOIN LATERAL (VALUES
-          ('roe', CASE WHEN g.pat > 0 THEN g.un / g.pat END),
-          ('roa', CASE WHEN g.act > 0 THEN g.un / g.act END),
-          ('rent_neta_ventas', CASE WHEN g.ing > 0 THEN g.un / g.ing END),
-          ('margen_bruto', CASE WHEN g.mb IS NOT NULL AND g.cvp > 0 AND g.ing > 0 THEN (g.ing - g.cvp) / g.ing ELSE g.mb END),
-          ('liquidez_corriente', g.liq),
-          ('end_activo', CASE WHEN g.act > 0 THEN (g.act - g.pat) / g.act END)
-        ) AS k(key, v)
-        WHERE k.v IS NOT NULL
-      ), cv AS (SELECT ${JSON.stringify(companyValues)}::jsonb AS c)
-      SELECT m.key, count(*)::int AS n,
-             percentile_cont(0.5) WITHIN GROUP (ORDER BY m.v) AS median,
-             count(*) FILTER (WHERE m.v < (cv.c->>m.key)::float8)::int AS below
-      FROM m, cv GROUP BY m.key
-    `,
-    getBenchmarkMedians({ prefix: chosen.prefix, anio, nearIngresos: ingresos, excludeExpediente: expediente }),
+    getBenchmarkMedians({
+      prefix: chosen.prefix,
+      anio,
+      nearIngresos: ingresos,
+      excludeExpediente: expediente,
+      companyValues: params.ratioValues,
+    }),
   ]);
 
-  const byKey = new Map(stats.map((s) => [s.key, s]));
   return {
     levelLabel: chosen.label,
     prefix: chosen.prefix,
@@ -293,17 +299,6 @@ export async function getPeerGroup(params: {
     sizeRank: larger + 1,
     peers,
     benchmark,
-    stats: PEER_METRICS.map((key) => {
-      const s = byKey.get(key);
-      const value = typeof own[key] === "number" ? (own[key] as number) : null;
-      return {
-        key,
-        value,
-        median: s?.median ?? null,
-        percentile: s && value !== null && s.n > 0 ? (s.below / s.n) * 100 : null,
-        n: s?.n ?? 0,
-      };
-    }),
   };
 }
 

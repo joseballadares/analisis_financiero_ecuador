@@ -36,9 +36,14 @@ const PERCENT_KEYS = new Set([
   "rent_ope_activo",
   "roe",
   "roa",
+  "margen_ebitda",
+  "roic",
+  "fcf_margen",
+  "dp_margen_ebit",
 ]);
 
-const DAYS_KEYS = new Set(["per_med_cobranza", "per_med_pago"]);
+const DAYS_KEYS = new Set(["per_med_cobranza", "per_med_pago", "dio", "ccc"]);
+const MONEY_KEYS = new Set(["fcf", "capital_trabajo", "ebitda", "deuda_neta"]);
 
 export function formatRatioValue(
   key: string,
@@ -46,6 +51,7 @@ export function formatRatioValue(
   percentDecimals = 1
 ): string {
   if (DAYS_KEYS.has(key)) return formatDays(value);
+  if (MONEY_KEYS.has(key)) return formatCompactMoney(value);
   if (PERCENT_KEYS.has(key)) return formatPercent(value, percentDecimals);
   return formatNumber(value);
 }

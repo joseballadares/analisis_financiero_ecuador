@@ -9,21 +9,15 @@ import {
 } from "@/lib/db";
 import { getCatalogNames, getCompanyBalanceRows, getSegmentShare } from "@/lib/queries";
 import { formatMoney, formatNumber, formatPercent, titleCase } from "@/lib/format";
-import RatiosGrid from "@/components/RatiosGrid";
+import RatiosTable from "@/components/RatiosTable";
+import StarRatios from "@/components/StarRatios";
 import BalanceSheetView from "@/components/BalanceSheetView";
 import PeersTab from "@/components/PeersTab";
 import StatementsView from "@/components/StatementsView";
 import SegmentCard from "@/components/SegmentCard";
 import { BarChart, LineChart } from "@/components/charts";
-import {
-  withDerived,
-  paymentDays,
-  fillFromBalance,
-  needsBalanceFill,
-  isInactive,
-  derivedRatios,
-  STRUCTURE_KEYS,
-} from "@/lib/derived";
+import { fillFromBalance, needsBalanceFill, isInactive, derivedRatios, STRUCTURE_KEYS } from "@/lib/derived";
+import { ratiosByYear } from "@/lib/star";
 import Tabs from "@/components/Tabs";
 
 export const dynamic = "force-dynamic";
@@ -74,18 +68,30 @@ export default async function EmpresaPage({
   const ownIngresos = (m.ingresos_ventas ?? 0) > 0 ? (m.ingresos_ventas as number) : (m.ingresos_totales ?? 0);
   const prevYear = filled.find((f) => f.anio === current.anio - 1);
 
-  const [peerGroup, balanceRows, segmentShare] = await Promise.all([
-    getPeerGroup({
-      expediente: company.expediente,
-      anio: current.anio,
-      ciiuN6: current.ciiu_n6,
-      metrics: m,
-    }),
+  const [balanceRows, segmentShare] = await Promise.all([
     getCompanyBalanceRows(company.expediente),
     current.ciiu_n6 && !inactive
       ? getSegmentShare({ ciiuN6: current.ciiu_n6, anio: current.anio, ingresos: ownIngresos })
       : Promise.resolve(null),
   ]);
+
+  const byYearMap = ratiosByYear(filled, balanceRows);
+  const byYear = Object.fromEntries(byYearMap);
+  const ratioValues: Record<string, number> = {};
+  for (const [k, v] of Object.entries(byYear[current.anio]?.values ?? {})) {
+    if (typeof v === "number" && Number.isFinite(v)) ratioValues[k] = v;
+  }
+  const peerGroup = await getPeerGroup({
+    expediente: company.expediente,
+    anio: current.anio,
+    ciiuN6: current.ciiu_n6,
+    metrics: m,
+    ratioValues,
+  });
+  const tableYears = filled
+    .map((f) => f.anio)
+    .filter((y) => y <= current.anio && y > current.anio - 8)
+    .sort((a, b) => a - b);
 
   const niifRows = balanceRows
     .filter((r) => r.catalog_id === 3)
@@ -105,14 +111,11 @@ export default async function EmpresaPage({
       : Promise.resolve({} as Record<string, string>);
   const names = await niifNames;
 
-  const ratioMetrics = withDerived(m, {
-    per_med_pago: balanceSheet ? paymentDays(balanceSheet.data, balanceSheet.catalog_id) : null,
-  });
-  const ratioBenchmark = peerGroup?.benchmark.medians ?? null;
+  const dist = inactive ? {} : (peerGroup?.benchmark.dist ?? {});
   const structureOnly = inactive && (m.activos ?? 0) >= 10000;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">{company.nombre}</h1>
@@ -195,34 +198,47 @@ export default async function EmpresaPage({
                     No hay ratios significativos: la empresa no reporta actividad operativa ni activos relevantes.
                   </p>
                 ) : (
-                  <div className="space-y-4">
-                    {peerGroup && !inactive && (
-                      <p className="text-sm text-muted">
-                        La referencia es la mediana de las {peerGroup.benchmark.n.toLocaleString("es-EC")} empresas
-                        activas más cercanas en tamaño de la {peerGroup.levelLabel} (CIIU{" "}
-                        <span className="font-mono">{peerGroup.prefix}</span>).
-                      </p>
-                    )}
-                    {structureOnly && (
-                      <p className="text-sm text-muted">
-                        Solo se muestran ratios de estructura del balance; los de rentabilidad y gestión no
-                        aplican sin ingresos.
-                      </p>
-                    )}
-                    <RatiosGrid
-                      metrics={ratioMetrics}
-                      benchmark={inactive ? null : ratioBenchmark}
-                      benchmarkLabel="pares"
-                      only={structureOnly ? STRUCTURE_KEYS : undefined}
-                      hideNote={structureOnly}
-                    />
+                  <div className="space-y-10">
+                    {!inactive && <StarRatios years={tableYears} byYear={byYear} dist={dist} />}
+                    <div>
+                      <h3 className="text-lg font-semibold">Todos los indicadores</h3>
+                      {peerGroup && !inactive && (
+                        <p className="mt-1 text-sm text-muted">
+                          La referencia (semáforo) es la posición entre las {peerGroup.benchmark.n.toLocaleString("es-EC")}{" "}
+                          empresas activas más cercanas en tamaño de la {peerGroup.levelLabel} (CIIU{" "}
+                          <span className="font-mono">{peerGroup.prefix}</span>).
+                        </p>
+                      )}
+                      {structureOnly && (
+                        <p className="mt-1 text-sm text-muted">
+                          Solo se muestran ratios de estructura del balance; los de rentabilidad y gestión no aplican
+                          sin ingresos.
+                        </p>
+                      )}
+                      <div className="mt-4">
+                        <RatiosTable
+                          years={tableYears}
+                          byYear={byYear}
+                          dist={dist}
+                          only={structureOnly ? STRUCTURE_KEYS : undefined}
+                          showBenchmark={!inactive}
+                        />
+                      </div>
+                      {!structureOnly && (
+                        <p className="mt-3 text-xs text-muted">
+                          Rentabilidad (neta y operacional), cobertura de intereses, apalancamiento, endeudamiento
+                          patrimonial, impacto de gastos y períodos de cobranza y pago se recalculan con las cifras
+                          exactas de cada empresa; la Superintendencia los trae con errores (signo perdido en pérdidas,
+                          días inverosímiles). Un guion indica que no es calculable (p. ej. patrimonio negativo). Margen
+                          bruto, endeudamiento del activo y rotación de activos también son exactos (la fuente los trunca a
+                          2 decimales); liquidez, prueba ácida y otras rotaciones vienen de la Superintendencia con 2
+                          decimales. Ver la <Link href="/acerca" className="text-brand hover:underline">metodología</Link>.
+                        </p>
+                      )}
+                    </div>
+                    {!inactive && <PeersTab group={peerGroup} />}
                   </div>
                 ),
-            },
-            {
-              id: "comparables",
-              label: "Comparables",
-              content: <PeersTab group={peerGroup} inactive={inactive} />,
             },
             {
               id: "estados",
