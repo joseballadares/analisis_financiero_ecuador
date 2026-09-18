@@ -15,7 +15,7 @@ export type CompanySearchResult = {
 
 export type Company = {
   expediente: number;
-  ruc: string;
+  ruc: string | null;
   nombre: string;
   tipo: string | null;
   provincia_codigo: string | null;
