@@ -12,8 +12,11 @@ const SRI_SECTIONS: { title: string; test: (n: number) => boolean }[] = [
   { title: "Estado de resultados (resumen)", test: (n) => n >= 1005 && n <= 1099 },
   { title: "Ingresos (detalle)", test: (n) => n >= 6001 && n <= 6999 },
   { title: "Costos y gastos (detalle)", test: (n) => n >= 7001 && n <= 7999 },
-  { title: "Conciliación tributaria e impuesto a la renta", test: (n) => n >= 801 && n <= 999 },
-  { title: "Operaciones con partes relacionadas", test: (n) => n < 100 },
+  {
+    title: "Conciliación tributaria e impuesto a la renta",
+    test: (n) => n === 98 || (n >= 801 && n <= 999),
+  },
+  { title: "Operaciones con partes relacionadas", test: (n) => n < 100 && n !== 98 },
 ];
 
 const MONETARY_SMALL_CODES = new Set(["3", "4", "5", "6", "29", "98"]);
