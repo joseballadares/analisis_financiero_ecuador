@@ -55,3 +55,24 @@ body {
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
+
+/* Árbol DuPont (pirámide) */
+.dtree ul { position: relative; display: flex; justify-content: center; padding-top: 22px; margin: 0; }
+.dtree li { position: relative; list-style: none; text-align: center; padding: 22px 6px 0 6px; }
+.dtree > ul { padding-top: 0; }
+.dtree > ul > li { padding-top: 0; }
+.dtree li::before, .dtree li::after {
+  content: ""; position: absolute; top: 0; right: 50%; width: 50%; height: 22px;
+  border-top: 1px solid var(--muted);
+}
+.dtree li::after { right: auto; left: 50%; border-left: 1px solid var(--muted); }
+.dtree li:only-child::before, .dtree li:only-child::after { display: none; }
+.dtree li:only-child { padding-top: 0; }
+.dtree li:first-child::before, .dtree li:last-child::after { border: 0 none; }
+.dtree li:last-child::before { border-right: 1px solid var(--muted); border-radius: 0 6px 0 0; }
+.dtree li:first-child::after { border-radius: 6px 0 0 0; }
+.dtree ul ul::before {
+  content: ""; position: absolute; top: 0; left: 50%; width: 0; height: 22px;
+  border-left: 1px solid var(--muted);
+}
+.dtree > ul > li::before, .dtree > ul > li::after { display: none; }

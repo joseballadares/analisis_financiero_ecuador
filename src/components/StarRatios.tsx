@@ -35,43 +35,44 @@ const HELP: Record<string, string> = {
   rot_ventas: "Ingresos que genera cada dólar de activos.",
 };
 
-const DUPONT = [
-  {
-    key: "dp_carga_fiscal",
-    nombre: "Carga fiscal y laboral",
-    formula: "Utilidad neta ÷ Utilidad antes de impuestos",
-    help: "Qué parte de la utilidad antes de impuestos se queda tras impuesto a la renta.",
-    pct: false,
-  },
-  {
-    key: "dp_carga_financiera",
-    nombre: "Carga financiera",
-    formula: "Utilidad antes de impuestos ÷ EBIT",
-    help: "Cuánto del resultado operativo absorben los intereses y otros gastos financieros.",
-    pct: false,
-  },
-  {
-    key: "dp_margen_ebit",
-    nombre: "Margen EBIT",
-    formula: "EBIT ÷ Ingresos",
-    help: "Rentabilidad operativa: cuánto queda de cada dólar vendido.",
-    pct: true,
-  },
-  {
-    key: "dp_rotacion",
-    nombre: "Rotación de activos",
-    formula: "Ingresos ÷ Activos",
-    help: "Eficiencia: ingresos que genera cada dólar de activos.",
-    pct: false,
-  },
-  {
-    key: "dp_apalancamiento",
-    nombre: "Apalancamiento",
-    formula: "Activos ÷ Patrimonio",
-    help: "Cuánto de los activos se financia con deuda y no con patrimonio.",
-    pct: false,
-  },
-];
+type TNode = {
+  key: string;
+  nombre: string;
+  formula: string;
+  kind: "pct" | "x";
+  children?: TNode[];
+};
+
+// ROE = ROA x Apalancamiento; ROA = Margen neto x Rotación; Margen neto = Carga fiscal x Carga financiera x Margen EBIT.
+const TREE: TNode = {
+  key: "roe",
+  nombre: "ROE",
+  formula: "ROA × Apalancamiento",
+  kind: "pct",
+  children: [
+    {
+      key: "roa",
+      nombre: "ROA",
+      formula: "Margen neto × Rotación de activos",
+      kind: "pct",
+      children: [
+        {
+          key: "rent_neta_ventas",
+          nombre: "Margen neto",
+          formula: "Carga fiscal × Carga financiera × Margen EBIT",
+          kind: "pct",
+          children: [
+            { key: "dp_carga_fiscal", nombre: "Carga fiscal y laboral", formula: "Utilidad neta ÷ Utilidad antes de impuestos", kind: "x" },
+            { key: "dp_carga_financiera", nombre: "Carga financiera", formula: "Utilidad antes de impuestos ÷ EBIT", kind: "x" },
+            { key: "dp_margen_ebit", nombre: "Margen EBIT", formula: "EBIT ÷ Ingresos", kind: "pct" },
+          ],
+        },
+        { key: "dp_rotacion", nombre: "Rotación de activos", formula: "Ingresos ÷ Activos", kind: "x" },
+      ],
+    },
+    { key: "dp_apalancamiento", nombre: "Apalancamiento", formula: "Activos ÷ Patrimonio", kind: "x" },
+  ],
+};
 
 function fmtFactor(v: number | null | undefined, pct: boolean) {
   if (typeof v !== "number") return "—";
@@ -148,33 +149,33 @@ export default function StarRatios({
       <div>
         <h3 className="text-lg font-semibold">ROE en formato DuPont</h3>
         <p className="mt-1 text-sm text-muted">
-          El ROE se descompone en cinco factores: cuánto retiene tras impuestos, cuánto pagan los intereses, qué tan
-          rentable es la operación, qué tan eficiente es el uso de activos y cuánto se financia con deuda.
+          La pirámide descompone el ROE: arriba el resultado, abajo los factores que lo producen. Cada nivel se
+          obtiene multiplicando los cuadros que están debajo de él.
         </p>
         {typeof cur?.values.dp_carga_fiscal === "number" ? (
-          <div className="mt-4 flex flex-wrap items-stretch gap-1.5">
-            {DUPONT.map((f, i) => (
-              <div key={f.key} className="flex items-center gap-1.5">
-                {i > 0 && <span className="text-lg text-muted">×</span>}
-                <div className="w-[9.25rem] rounded-xl border border-border bg-surface p-3" title={f.formula}>
-                  <div className="text-xs font-medium leading-snug">{f.nombre}</div>
-                  <div className="mt-1 flex items-center justify-between">
-                    <span className="text-lg font-semibold tabular-nums">{fmtFactor(cur.values[f.key], f.pct)}</span>
-                    <Sparkline values={seriesOf(f.key)} width={44} height={20} title={f.nombre} />
-                  </div>
-                  <div className="mt-1 text-[11px] leading-snug text-muted">{f.help}</div>
-                </div>
-              </div>
-            ))}
-            <div className="flex items-center gap-1.5">
-              <span className="text-lg text-muted">=</span>
-              <div className="w-32 rounded-xl border border-brand bg-brand-soft p-3">
-                <div className="text-xs font-medium">ROE</div>
-                <div className="mt-1 text-2xl font-semibold tabular-nums">{typeof roe === "number" ? formatPercent(roe, 1) : "—"}</div>
-                <div className="mt-1 text-[11px] text-muted">Utilidad neta ÷ Patrimonio</div>
+          <>
+            <div className="mt-5 overflow-x-auto pb-2">
+              <div className="dtree mx-auto w-max min-w-full">
+                <ul>
+                  <DuPontNode node={TREE} values={cur.values} seriesOf={seriesOf} />
+                </ul>
               </div>
             </div>
-          </div>
+            <ul className="mt-4 grid gap-2 text-xs text-muted sm:grid-cols-3">
+              <li>
+                <strong className="text-foreground">Margen (rentabilidad):</strong> cuánto queda de cada dólar vendido,
+                tras costos, intereses e impuestos.
+              </li>
+              <li>
+                <strong className="text-foreground">Rotación (eficiencia):</strong> ingresos que genera cada dólar de
+                activos.
+              </li>
+              <li>
+                <strong className="text-foreground">Apalancamiento (financiamiento):</strong> cuánto de los activos se
+                financia con deuda y no con patrimonio.
+              </li>
+            </ul>
+          </>
         ) : (
           <p className="mt-3 rounded-lg border border-border bg-surface p-3 text-sm text-muted">
             El desglose DuPont solo se calcula cuando la utilidad antes de impuestos, el EBIT y el patrimonio son
@@ -231,5 +232,45 @@ export default function StarRatios({
         </ul>
       </details>
     </div>
+  );
+}
+
+function DuPontNode({
+  node,
+  values,
+  seriesOf,
+}: {
+  node: TNode;
+  values: Record<string, number | null>;
+  seriesOf: (k: string) => (number | null)[];
+}) {
+  const v = values[node.key];
+  const isTop = node.key === "roe";
+  const hasChildren = !!node.children?.length;
+  return (
+    <li>
+      <div
+        className={`mx-auto w-40 rounded-xl border p-3 text-left ${
+          isTop ? "border-brand bg-brand-soft" : hasChildren ? "border-brand/60 bg-surface" : "border-border bg-surface"
+        }`}
+        title={`${node.nombre} = ${node.formula}`}
+      >
+        <div className="text-xs font-medium leading-snug">{node.nombre}</div>
+        <div className="mt-1 flex items-center justify-between gap-1">
+          <span className={`font-semibold tabular-nums ${isTop ? "text-2xl" : "text-lg"}`}>
+            {fmtFactor(v, node.kind === "pct")}
+          </span>
+          <Sparkline values={seriesOf(node.key)} width={44} height={20} title={node.nombre} />
+        </div>
+        <div className="mt-1 text-[10px] leading-snug text-muted">= {node.formula}</div>
+      </div>
+      {hasChildren && (
+        <ul>
+          {node.children!.map((c) => (
+            <DuPontNode key={c.key} node={c} values={values} seriesOf={seriesOf} />
+          ))}
+        </ul>
+      )}
+    </li>
   );
 }
