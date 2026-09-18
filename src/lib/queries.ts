@@ -4,6 +4,20 @@ import { MIN_ACTIVE_REVENUE } from "@/lib/derived";
 const VEN_F = VEN.replace(/metrics/g, "f.metrics");
 const VEN_C = VEN.replace(/metrics/g, "c.metrics");
 
+// Caché en memoria para agregaciones pesadas: los datos solo cambian con una nueva carga.
+const MEMO_TTL_MS = 6 * 60 * 60 * 1000;
+const memoStore = new Map<string, { at: number; value: Promise<unknown> }>();
+function memo<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  const hit = memoStore.get(key);
+  if (hit && Date.now() - hit.at < MEMO_TTL_MS) return hit.value as Promise<T>;
+  const value = fn().catch((e) => {
+    memoStore.delete(key);
+    throw e;
+  });
+  memoStore.set(key, { at: Date.now(), value });
+  return value;
+}
+
 export type AdvancedFilters = {
   anio: number;
   q?: string;
@@ -88,7 +102,7 @@ export type ProvinceStat = {
   activos: number;
 };
 
-export async function getProvinceStats(anio: number): Promise<ProvinceStat[]> {
+async function getProvinceStatsRaw(anio: number): Promise<ProvinceStat[]> {
   const database = db();
   return database.sql<ProvinceStat>`
     WITH x AS (
@@ -106,6 +120,10 @@ export async function getProvinceStats(anio: number): Promise<ProvinceStat[]> {
   `;
 }
 
+export function getProvinceStats(anio: number): Promise<ProvinceStat[]> {
+  return memo(`prov:${anio}`, () => getProvinceStatsRaw(anio));
+}
+
 export type SectorYearStat = {
   ciiu_n1: string;
   anio: number;
@@ -117,7 +135,7 @@ export type SectorYearStat = {
 // Las variaciones anuales usan una clasificación constante: cada empresa se asigna al sector que
 // tiene en el año elegido, también para el año anterior. Así un cambio de CIIU (p. ej. una empresa
 // que pasa de manufactura a electricidad) no se confunde con crecimiento o caída del sector.
-export async function getSectorOverview(anio: number): Promise<SectorYearStat[]> {
+async function getSectorOverviewRaw(anio: number): Promise<SectorYearStat[]> {
   const database = db();
   return database.sql<SectorYearStat>`
     WITH cur AS (
@@ -138,6 +156,10 @@ export async function getSectorOverview(anio: number): Promise<SectorYearStat[]>
   `;
 }
 
+export function getSectorOverview(anio: number): Promise<SectorYearStat[]> {
+  return memo(`ov:${anio}`, () => getSectorOverviewRaw(anio));
+}
+
 export type SectorSeriesRow = {
   anio: number;
   empresas: number;
@@ -148,7 +170,7 @@ export type SectorSeriesRow = {
   margen_mediano: number | null;
 };
 
-export async function getSectorSeries(ciiu: string, desde: number, hasta: number): Promise<SectorSeriesRow[]> {
+async function getSectorSeriesRaw(ciiu: string, desde: number, hasta: number): Promise<SectorSeriesRow[]> {
   const database = db();
   return database.sql<SectorSeriesRow>`
     WITH cur AS (
@@ -184,9 +206,13 @@ export async function getSectorSeries(ciiu: string, desde: number, hasta: number
   `;
 }
 
+export function getSectorSeries(ciiu: string, desde: number, hasta: number): Promise<SectorSeriesRow[]> {
+  return memo(`ser:${ciiu}:${desde}:${hasta}`, () => getSectorSeriesRaw(ciiu, desde, hasta));
+}
+
 export type SizeMixRow = { cod_segmento: number | null; empresas: number; ingresos: number };
 
-export async function getSectorSizeMix(ciiu: string, anio: number): Promise<SizeMixRow[]> {
+async function getSectorSizeMixRaw(ciiu: string, anio: number): Promise<SizeMixRow[]> {
   const database = db();
   return database.sql<SizeMixRow>`
     WITH r AS (
@@ -197,6 +223,10 @@ export async function getSectorSizeMix(ciiu: string, anio: number): Promise<Size
     SELECT cod_segmento, count(*)::int AS empresas, sum(ven)::float8 AS ingresos
     FROM r WHERE ven > 0 GROUP BY cod_segmento
   `;
+}
+
+export function getSectorSizeMix(ciiu: string, anio: number): Promise<SizeMixRow[]> {
+  return memo(`mix:${ciiu}:${anio}`, () => getSectorSizeMixRaw(ciiu, anio));
 }
 
 export type SegmentShare = {
