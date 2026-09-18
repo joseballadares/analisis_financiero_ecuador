@@ -5,11 +5,13 @@ import {
   getCompanyFinancials,
   getCompanyBalanceSheet,
   getSectorIndicators,
+  getPeerGroup,
   type CompanyYearFinancial,
 } from "@/lib/db";
 import { formatMoney, formatNumber } from "@/lib/format";
 import RatiosGrid from "@/components/RatiosGrid";
 import BalanceSheetView from "@/components/BalanceSheetView";
+import PeersTab from "@/components/PeersTab";
 import Tabs from "@/components/Tabs";
 
 export const dynamic = "force-dynamic";
@@ -45,9 +47,15 @@ export default async function EmpresaPage({
   const current = financials.find((f) => f.anio === selectedYear) ?? financials[0];
   const m = current.metrics;
 
-  const [balanceSheet, sectorBenchmark] = await Promise.all([
+  const [balanceSheet, sectorBenchmark, peerGroup] = await Promise.all([
     getCompanyBalanceSheet(company.expediente, current.anio),
     current.ciiu_n1 ? getSectorIndicators(current.ciiu_n1, current.anio) : Promise.resolve(null),
+    getPeerGroup({
+      expediente: company.expediente,
+      anio: current.anio,
+      ciiuN6: current.ciiu_n6,
+      metrics: m,
+    }),
   ]);
 
   return (
@@ -115,10 +123,19 @@ export default async function EmpresaPage({
               ),
             },
             {
+              id: "comparables",
+              label: "Comparables",
+              content: <PeersTab group={peerGroup} />,
+            },
+            {
               id: "estados",
               label: "Estados financieros",
               content: balanceSheet ? (
-                <BalanceSheetView data={balanceSheet.data} names={balanceSheet.names} />
+                <BalanceSheetView
+                  data={balanceSheet.data}
+                  names={balanceSheet.names}
+                  catalogId={balanceSheet.catalog_id}
+                />
               ) : (
                 <p className="text-sm text-muted">
                   El detalle línea por línea del balance está disponible desde el año 2019.

@@ -62,12 +62,140 @@ export async function searchCompanies(query: string, limit = 20): Promise<Compan
   const q = query.trim();
   if (!q) return [];
   return database.sql<CompanySearchResult>`
-    SELECT expediente, ruc, nombre, provincia
-    FROM companies
-    WHERE nombre ILIKE ${"%" + q + "%"} OR ruc ILIKE ${q + "%"}
-    ORDER BY similarity(nombre, ${q}) DESC
+    WITH latest AS (SELECT max(anio) AS anio FROM company_year_financials)
+    SELECT c.expediente, c.ruc, c.nombre, c.provincia
+    FROM companies c
+    LEFT JOIN company_year_financials f
+      ON f.expediente = c.expediente AND f.anio = (SELECT anio FROM latest)
+    WHERE c.nombre ILIKE ${"%" + q + "%"} OR c.ruc ILIKE ${q + "%"}
+    ORDER BY (f.posicion_general IS NULL), f.posicion_general, similarity(c.nombre, ${q}) DESC
     LIMIT ${limit}
   `;
+}
+
+const PEER_METRICS = [
+  "roe",
+  "roa",
+  "rent_neta_ventas",
+  "margen_operacional",
+  "liquidez_corriente",
+  "end_activo",
+] as const;
+
+export type PeerStat = {
+  key: string;
+  value: number | null;
+  median: number | null;
+  percentile: number | null;
+  n: number;
+};
+
+export type PeerRow = {
+  expediente: number;
+  ruc: string | null;
+  nombre: string;
+  metrics: Metrics;
+};
+
+export type PeerGroup = {
+  levelLabel: string;
+  prefix: string;
+  total: number;
+  sizeRank: number;
+  peers: PeerRow[];
+  stats: PeerStat[];
+};
+
+export async function getPeerGroup(params: {
+  expediente: number;
+  anio: number;
+  ciiuN6: string | null;
+  metrics: Metrics;
+}): Promise<PeerGroup | null> {
+  const { expediente, anio, ciiuN6, metrics } = params;
+  const ingresos = metrics.ingresos_totales ?? metrics.ingresos_ventas ?? 0;
+  if (!ciiuN6 || !(ingresos > 0)) return null;
+  const database = db();
+
+  const levels = [
+    { label: "misma actividad", prefix: ciiuN6 },
+    { label: "misma clase de actividad", prefix: ciiuN6.slice(0, 5) },
+    { label: "mismo grupo de actividad", prefix: ciiuN6.slice(0, 4) },
+    { label: "mismo sector", prefix: ciiuN6.slice(0, 1) },
+  ].filter((l, i, arr) => arr.findIndex((x) => x.prefix === l.prefix) === i);
+
+  let chosen = levels[levels.length - 1];
+  let total = 0;
+  let larger = 0;
+  for (const level of levels) {
+    const [row] = await database.sql<{ total: number; larger: number }>`
+      SELECT count(*)::int AS total,
+             count(*) FILTER (WHERE (metrics->>'ingresos_totales')::float8 > ${ingresos}::float8)::int AS larger
+      FROM company_year_financials
+      WHERE anio = ${anio} AND ciiu_n6 LIKE ${level.prefix + "%"} AND expediente <> ${expediente}
+        AND (metrics->>'ingresos_totales')::float8 > 0
+    `;
+    chosen = level;
+    total = row?.total ?? 0;
+    larger = row?.larger ?? 0;
+    if (total >= 10) break;
+  }
+  if (total === 0) return null;
+
+  const like = chosen.prefix + "%";
+  const companyValues: Record<string, number> = {};
+  for (const k of PEER_METRICS) {
+    const v = metrics[k];
+    if (typeof v === "number") companyValues[k] = v;
+  }
+  const metricList = database.sql.raw(PEER_METRICS.map((k) => `('${k}')`).join(","));
+
+  const [peers, stats] = await Promise.all([
+    database.sql<PeerRow>`
+      SELECT c.expediente, c.ruc, c.nombre, f.metrics
+      FROM company_year_financials f
+      JOIN companies c ON c.expediente = f.expediente
+      WHERE f.anio = ${anio} AND f.ciiu_n6 LIKE ${like} AND f.expediente <> ${expediente}
+        AND (f.metrics->>'ingresos_totales')::float8 > 0
+      ORDER BY abs(ln((f.metrics->>'ingresos_totales')::float8) - ln(${ingresos}::float8))
+      LIMIT 10
+    `,
+    database.sql<{ key: string; n: number; median: number | null; below: number }>`
+      WITH g AS (
+        SELECT metrics FROM company_year_financials
+        WHERE anio = ${anio} AND ciiu_n6 LIKE ${like} AND expediente <> ${expediente}
+          AND (metrics->>'ingresos_totales')::float8 > 0
+      ), m AS (
+        SELECT k.key, (g.metrics->>k.key)::float8 AS v
+        FROM g CROSS JOIN (VALUES ${metricList}) AS k(key)
+        WHERE g.metrics->>k.key IS NOT NULL
+      ), cv AS (SELECT ${JSON.stringify(companyValues)}::jsonb AS c)
+      SELECT m.key, count(*)::int AS n,
+             percentile_cont(0.5) WITHIN GROUP (ORDER BY m.v) AS median,
+             count(*) FILTER (WHERE m.v < (cv.c->>m.key)::float8)::int AS below
+      FROM m, cv GROUP BY m.key
+    `,
+  ]);
+
+  const byKey = new Map(stats.map((s) => [s.key, s]));
+  return {
+    levelLabel: chosen.label,
+    prefix: chosen.prefix,
+    total,
+    sizeRank: larger + 1,
+    peers,
+    stats: PEER_METRICS.map((key) => {
+      const s = byKey.get(key);
+      const value = typeof metrics[key] === "number" ? (metrics[key] as number) : null;
+      return {
+        key,
+        value,
+        median: s?.median ?? null,
+        percentile: s && value !== null && s.n > 0 ? (s.below / s.n) * 100 : null,
+        n: s?.n ?? 0,
+      };
+    }),
+  };
 }
 
 export async function getCompanyByRuc(ruc: string): Promise<Company | null> {
