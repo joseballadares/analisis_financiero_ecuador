@@ -12,6 +12,11 @@ const RANKING_PARTS = Array.from(
   (_, i) => `company_year_financials_part_${String(i).padStart(2, "0")}.tsv`
 );
 
+const BALANCE_PARTS = Array.from(
+  { length: 8 },
+  (_, i) => `balance_line_items_part_${String(i).padStart(2, "0")}.tsv`
+);
+
 const TABLES: { table: string; columns: string[]; files: string[] }[] = [
   {
     table: "companies",
@@ -43,7 +48,7 @@ const TABLES: { table: string; columns: string[]; files: string[] }[] = [
   {
     table: "balance_line_items",
     columns: ["expediente", "ruc", "anio", "catalog_id", "ciiu", "data"],
-    files: ["balance_line_items.tsv"],
+    files: BALANCE_PARTS,
   },
 ];
 
