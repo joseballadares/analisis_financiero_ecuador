@@ -48,12 +48,17 @@ export default function ResumenTab({
   const pasivos = trend.map((f) =>
     num(f.metrics.activos) !== null && num(f.metrics.patrimonio) !== null ? (f.metrics.activos as number) - (f.metrics.patrimonio as number) : null,
   );
+  // Años sin costo de ventas reportado (fuente incompleta) dan márgenes de 100% engañosos: se omiten.
+  const hasCost = trend.map((f) => (num(f.metrics.costos_ventas_prod) ?? 0) > 0);
+  const mask = (arr: (number | null)[]) => arr.map((v, i) => (hasCost[i] ? v : null));
   const ratioOverRevenue = (k: string) =>
-    trend.map((f) => {
-      const v = ven(f);
-      const x = num(f.metrics[k]);
-      return v && v > 0 && x !== null ? x / v : null;
-    });
+    mask(
+      trend.map((f) => {
+        const v = ven(f);
+        const x = num(f.metrics[k]);
+        return v && v > 0 && x !== null ? x / v : null;
+      }),
+    );
   const prod = trend.map((f) => {
     const v = ven(f);
     const e = num(f.metrics.n_empleados);
@@ -124,8 +129,8 @@ export default function ResumenTab({
               events={EVENTS}
               format={(v) => formatPercent(v, 0)}
               series={[
-                { name: "Margen bruto", color: "var(--brand)", values: val("margen_bruto") },
-                { name: "Margen operacional", color: "var(--accent)", values: val("margen_operacional") },
+                { name: "Margen bruto", color: "var(--brand)", values: mask(val("margen_bruto")) },
+                { name: "Margen operacional", color: "var(--accent)", values: mask(val("margen_operacional")) },
                 { name: "Margen neto", color: "var(--positive)", values: val("rent_neta_ventas") },
               ]}
             />

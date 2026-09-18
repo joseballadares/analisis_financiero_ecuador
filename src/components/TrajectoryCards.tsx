@@ -10,7 +10,8 @@ export function RankCard({ ranks, universe }: { ranks: Point[]; universe: Record
   const first = ranks[0];
   const last = ranks[ranks.length - 1];
   const topPct = (p: Point) => (universe[p.anio] ? (p.value / universe[p.anio]) * 100 : null);
-  const pctFmt = (v: number | null) => (v === null ? "—" : `Top ${new Intl.NumberFormat("es-EC", { maximumFractionDigits: 2 }).format(v)}%`);
+  const pctFmt = (v: number | null) =>
+    v === null ? "—" : `Top ${new Intl.NumberFormat("es-EC", { maximumFractionDigits: v < 0.1 ? 3 : v < 1 ? 2 : 1 }).format(v)}%`;
   const improved = last.value < first.value;
   return (
     <div className="rounded-xl border border-border bg-surface p-4">

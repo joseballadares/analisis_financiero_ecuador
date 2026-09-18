@@ -114,13 +114,13 @@ function Events({
             <line
               x1={cx}
               x2={cx}
-              y1={PAD.t - 6}
+              y1={16}
               y2={H - PAD.b}
               strokeWidth="1.5"
               strokeDasharray="5 4"
               style={{ stroke: "var(--negative)" }}
             />
-            <text x={tx} y={PAD.t + 4} textAnchor={anchor} fontSize="10" style={{ fill: "var(--negative)" }}>
+            <text x={tx} y={11} textAnchor={anchor} fontSize="10" style={{ fill: "var(--negative)" }}>
               {e.year} {e.label}
             </text>
           </g>
@@ -139,6 +139,7 @@ function TrendLines({
   x: (i: number) => number;
   y: (v: number) => number;
 }) {
+  const clamp = (v: number) => Math.min(Math.max(v, PAD.t), H - PAD.b);
   return (
     <>
       {series.map((s) => {
@@ -149,8 +150,8 @@ function TrendLines({
             key={s.name}
             x1={x(r.x0)}
             x2={x(r.x1)}
-            y1={y(r.a + r.b * r.x0)}
-            y2={y(r.a + r.b * r.x1)}
+            y1={clamp(y(r.a + r.b * r.x0))}
+            y2={clamp(y(r.a + r.b * r.x1))}
             strokeWidth="2"
             strokeDasharray="6 4"
             strokeLinecap="round"
