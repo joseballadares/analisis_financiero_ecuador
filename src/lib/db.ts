@@ -73,7 +73,7 @@ export async function searchCompanies(query: string, limit = 20): Promise<Compan
 export async function getCompanyByRuc(ruc: string): Promise<Company | null> {
   const database = db();
   const [company] = await database.sql<Company>`
-    SELECT * FROM companies WHERE ruc = ${ruc}
+    SELECT * FROM companies WHERE ruc = ${ruc} ORDER BY expediente DESC LIMIT 1
   `;
   return company ?? null;
 }
