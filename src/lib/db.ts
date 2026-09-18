@@ -268,7 +268,11 @@ export async function getSectorMedians(ciiuN1: string, anio: number): Promise<Re
              COALESCE(NULLIF((metrics->>'ingresos_ventas')::float8, 0), (metrics->>'ingresos_totales')::float8) AS ven,
              (metrics->>'gastos_admin_ventas')::float8 AS gav,
              (metrics->>'gastos_financieros')::float8 AS gfin,
-             (metrics->>'rot_cartera')::float8 AS rc
+             (metrics->>'rot_cartera')::float8 AS rc,
+             (metrics->>'rot_activo_fijo')::float8 AS raf,
+             (metrics->>'utilidad_an_imp')::float8 AS uai,
+             COALESCE((metrics->>'ingresos_ventas')::float8, 0) - COALESCE((metrics->>'costos_ventas_prod')::float8, 0)
+               - COALESCE((metrics->>'gastos_admin_ventas')::float8, 0) AS uo
       FROM company_year_financials
       WHERE anio = ${anio} AND ciiu_n1 = ${ciiuN1}
     ), m AS (
@@ -281,7 +285,15 @@ export async function getSectorMedians(ciiuN1: string, anio: number): Promise<Re
         ('apalancamiento', CASE WHEN g.act > 0 AND g.pat > 0 THEN g.act / g.pat END),
         ('impac_gasto_a_v', CASE WHEN g.ven > 0 THEN g.gav / g.ven END),
         ('impac_carga_finan', CASE WHEN g.ven > 0 THEN g.gfin / g.ven END),
-        ('per_med_cobranza', CASE WHEN g.rc > 0 THEN 365 / g.rc END)
+        ('per_med_cobranza', CASE WHEN g.rc > 0 THEN 365 / g.rc END),
+        ('margen_operacional', CASE WHEN g.ven > 0 THEN g.uo / g.ven END),
+        ('rent_ope_patrimonio', CASE WHEN g.pat > 0 THEN g.uo / g.pat END),
+        ('rent_ope_activo', CASE WHEN g.act > 0 THEN g.uo / g.act END),
+        ('cobertura_interes', CASE WHEN g.gfin > 0 THEN g.uo / g.gfin END),
+        ('rent_neta_activo', CASE WHEN g.act > 0 THEN g.un / g.act END),
+        ('end_activo_fijo', CASE WHEN g.pat > 0 AND g.ven > 0 AND g.raf > 0 THEN g.pat * g.raf / g.ven END),
+        ('apalancamiento_financiero', CASE WHEN g.uai IS NOT NULL AND g.uai <> 0 AND g.uai + g.gfin > 0 AND g.pat > 0 AND g.act > 0
+                                          THEN (g.uai / g.pat) / ((g.uai + g.gfin) / g.act) END)
       ) AS k(key, v)
       WHERE k.v IS NOT NULL AND g.ven > 0
     )

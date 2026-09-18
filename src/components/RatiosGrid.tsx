@@ -1,5 +1,8 @@
 import ratiosData from "@/data/ratios.json";
 import { formatRatioValue } from "@/lib/format";
+import { DERIVED_KEYS } from "@/lib/derived";
+
+const DERIVED = new Set<string>(DERIVED_KEYS);
 
 type Indicador = {
   key: string;
@@ -56,11 +59,11 @@ export default function RatiosGrid({
                         </span>
                       </td>
                       <td className="px-4 py-2.5 text-right font-medium tabular-nums whitespace-nowrap">
-                        {formatRatioValue(ind.key, value, 0)}
+                        {formatRatioValue(ind.key, value, DERIVED.has(ind.key) ? 1 : 0)}
                       </td>
                       {benchmark && (
                         <td className="px-4 py-2.5 text-right text-muted tabular-nums whitespace-nowrap">
-                          sector: {formatRatioValue(ind.key, bench ?? null, 0)}
+                          sector: {formatRatioValue(ind.key, bench ?? null, DERIVED.has(ind.key) ? 1 : 0)}
                         </td>
                       )}
                     </tr>
@@ -72,13 +75,15 @@ export default function RatiosGrid({
         </div>
       ))}
       <p className="text-xs text-muted">
-        Rentabilidad (ROE, ROA, margen neto), endeudamiento patrimonial, apalancamiento, impacto de
-        gastos y períodos de cobranza y pago se recalculan con las cifras exactas de la empresa,
-        porque el archivo de la Superintendencia los trae con errores (signo perdido en pérdidas,
-        días inverosímiles). Un guion indica que no es calculable (p. ej. patrimonio negativo). El
-        período medio de pago se estima sobre el costo de ventas. Los demás ratios vienen tal cual
-        de la Superintendencia, redondeados a 2 decimales; margen y rentabilidad operacional pueden
-        no reflejar la utilidad operacional real.
+        Rentabilidad (neta y operacional), cobertura de intereses, apalancamiento, endeudamiento
+        patrimonial, impacto de gastos y períodos de cobranza y pago se recalculan con las cifras
+        exactas de la empresa (utilidad operacional = ingresos - costo de ventas - gastos de
+        administración y ventas), porque el archivo de la Superintendencia los trae con errores
+        (signo perdido en pérdidas, días inverosímiles, utilidad operacional inconsistente). Un
+        guion indica que no es calculable (p. ej. patrimonio negativo). El período medio de pago se
+        estima sobre el costo de ventas. Los demás ratios (liquidez, rotaciones, estructura de
+        pasivos) vienen de la Superintendencia, verificados contra los balances, redondeados a 2
+        decimales.
       </p>
     </div>
   );

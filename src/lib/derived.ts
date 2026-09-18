@@ -18,6 +18,13 @@ export const DERIVED_KEYS = [
   "impac_carga_finan",
   "per_med_cobranza",
   "per_med_pago",
+  "margen_operacional",
+  "rent_ope_patrimonio",
+  "rent_ope_activo",
+  "cobertura_interes",
+  "rent_neta_activo",
+  "end_activo_fijo",
+  "apalancamiento_financiero",
 ] as const;
 
 export function derivedRatios(m: Metrics): Record<string, number | null> {
@@ -28,6 +35,12 @@ export function derivedRatios(m: Metrics): Record<string, number | null> {
   const posPat = ok(pat) && pat > 0;
   const posAct = ok(act) && act > 0;
   const posVen = ok(ven) && ven > 0;
+  // Utilidad operacional según la definición de la Superintendencia:
+  // ingresos - costo de ventas - gastos de administración y ventas.
+  const uo = posVen ? ven! - (m.costos_ventas_prod ?? 0) - (m.gastos_admin_ventas ?? 0) : null;
+  const gf = m.gastos_financieros;
+  const uai = m.utilidad_an_imp;
+  const uaii = ok(uai) && ok(gf) ? uai + gf : null;
   return {
     roe: ok(un) && posPat ? un / pat! : null,
     roa: ok(un) && posAct ? un / act! : null,
@@ -39,6 +52,17 @@ export function derivedRatios(m: Metrics): Record<string, number | null> {
     impac_carga_finan: ok(m.gastos_financieros) && posVen ? m.gastos_financieros / ven! : null,
     per_med_cobranza: ok(m.rot_cartera) && m.rot_cartera > 0 ? 365 / m.rot_cartera : null,
     per_med_pago: null,
+    margen_operacional: ok(uo) && posVen ? uo / ven! : null,
+    rent_ope_patrimonio: ok(uo) && posPat ? uo / pat! : null,
+    rent_ope_activo: ok(uo) && posAct ? uo / act! : null,
+    cobertura_interes: ok(uo) && ok(gf) && gf > 0 ? uo / gf : null,
+    rent_neta_activo: ok(un) && posAct ? un / act! : null,
+    end_activo_fijo:
+      posPat && posVen && ok(m.rot_activo_fijo) && m.rot_activo_fijo > 0 ? (pat! * m.rot_activo_fijo) / ven! : null,
+    apalancamiento_financiero:
+      ok(uai) && ok(uaii) && uaii > 0 && posPat && posAct && uai !== 0
+        ? uai / pat! / (uaii / act!)
+        : null,
     margen_bruto: ok(m.margen_bruto) ? m.margen_bruto : null,
     liquidez_corriente: ok(m.liquidez_corriente) ? m.liquidez_corriente : null,
   };
