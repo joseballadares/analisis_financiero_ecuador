@@ -189,8 +189,8 @@ export type Bubble = {
 
 export function BubbleChart({ items, nationalGrowth }: { items: Bubble[]; nationalGrowth: number }) {
   const pl = 62;
-  const pr = 16;
-  const pt = 14;
+  const pr = 30;
+  const pt = 36;
   const pb = 40;
   const w = 720;
   const h = 380;

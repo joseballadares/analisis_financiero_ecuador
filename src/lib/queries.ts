@@ -2,6 +2,7 @@ import { db, VEN, type ChartOfAccountsEntryRow } from "@/lib/db";
 import { MIN_ACTIVE_REVENUE } from "@/lib/derived";
 
 const VEN_F = VEN.replace(/metrics/g, "f.metrics");
+const VEN_C = VEN.replace(/metrics/g, "c.metrics");
 
 export type AdvancedFilters = {
   anio: number;
@@ -113,20 +114,27 @@ export type SectorYearStat = {
   margen_mediano: number | null;
 };
 
+// Las variaciones anuales usan una clasificación constante: cada empresa se asigna al sector que
+// tiene en el año elegido, también para el año anterior. Así un cambio de CIIU (p. ej. una empresa
+// que pasa de manufactura a electricidad) no se confunde con crecimiento o caída del sector.
 export async function getSectorOverview(anio: number): Promise<SectorYearStat[]> {
   const database = db();
   return database.sql<SectorYearStat>`
-    WITH x AS (
-      SELECT f.ciiu_n1, f.anio, ${database.sql.raw(VEN_F)} AS ven, (f.metrics->>'utilidad_neta')::float8 AS un
+    WITH cur AS (
+      SELECT expediente, ciiu_n1 FROM company_year_financials WHERE anio = ${anio} AND ciiu_n1 IS NOT NULL
+    ), x AS (
+      SELECT COALESCE(cur.ciiu_n1, f.ciiu_n1) AS ciiu_n1, f.anio,
+             ${database.sql.raw(VEN_F)} AS ven, (f.metrics->>'utilidad_neta')::float8 AS un
       FROM company_year_financials f
-      WHERE f.anio IN (${anio}, ${anio - 1}) AND f.ciiu_n1 IS NOT NULL
+      LEFT JOIN cur ON cur.expediente = f.expediente
+      WHERE f.anio IN (${anio}, ${anio - 1})
     )
     SELECT ciiu_n1, anio,
            (count(*) FILTER (WHERE ven > 0))::int AS empresas,
            COALESCE(sum(ven) FILTER (WHERE ven > 0), 0)::float8 AS ingresos,
            percentile_cont(0.5) WITHIN GROUP (ORDER BY un / ven)
              FILTER (WHERE ven >= ${MIN_ACTIVE_REVENUE}::float8 AND un IS NOT NULL) AS margen_mediano
-    FROM x GROUP BY ciiu_n1, anio
+    FROM x WHERE ciiu_n1 IS NOT NULL GROUP BY ciiu_n1, anio
   `;
 }
 
@@ -143,10 +151,23 @@ export type SectorSeriesRow = {
 export async function getSectorSeries(ciiu: string, desde: number, hasta: number): Promise<SectorSeriesRow[]> {
   const database = db();
   return database.sql<SectorSeriesRow>`
-    WITH r AS (
-      SELECT f.anio, ${database.sql.raw(VEN_F)} AS ven, (f.metrics->>'utilidad_neta')::float8 AS un
+    WITH cur AS (
+      SELECT expediente, ciiu_n1 FROM company_year_financials WHERE anio = ${hasta} AND ciiu_n1 IS NOT NULL
+    ), cand AS (
+      SELECT f.expediente, f.anio, f.ciiu_n1, f.metrics
       FROM company_year_financials f
       WHERE f.ciiu_n1 = ${ciiu} AND f.anio BETWEEN ${desde} AND ${hasta}
+      UNION ALL
+      SELECT f.expediente, f.anio, f.ciiu_n1, f.metrics
+      FROM company_year_financials f
+      WHERE f.expediente IN (SELECT expediente FROM cur WHERE ciiu_n1 = ${ciiu})
+        AND f.anio BETWEEN ${desde} AND ${hasta}
+        AND f.ciiu_n1 IS DISTINCT FROM ${ciiu}
+    ), r AS (
+      SELECT c.anio, ${database.sql.raw(VEN_C)} AS ven, (c.metrics->>'utilidad_neta')::float8 AS un
+      FROM cand c
+      LEFT JOIN cur ON cur.expediente = c.expediente
+      WHERE COALESCE(cur.ciiu_n1, c.ciiu_n1) = ${ciiu}
     ), q AS (
       SELECT anio, ven, un, row_number() OVER (PARTITION BY anio ORDER BY ven DESC) AS rn
       FROM r WHERE ven > 0
