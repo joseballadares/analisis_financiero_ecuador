@@ -1,5 +1,5 @@
 [build]
-  command = "node scripts/seed-production.mjs && npm run build"
+  command = "npm run build"
   publish = ".next"
 
 [[plugins]]
