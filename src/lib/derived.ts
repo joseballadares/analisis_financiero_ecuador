@@ -37,7 +37,7 @@ const trunc2 = (x: number) => (x >= 0 ? Math.floor(x * 100 + 1e-9) : -Math.floor
 // La fuente TRUNCA (no redondea) todos sus ratios a 2 decimales, lo que los sesga a la baja hasta
 // 0,01 (p. ej. margen bruto 0,2596 aparece como 0,25). Se usa el valor exacto solo cuando
 // reproduce el de la fuente al truncarlo; si no coincide (costos mal declarados), se conserva el original.
-function exactIfConsistent(source: number | null | undefined, exact: number | null): number | null {
+export function exactIfConsistent(source: number | null | undefined, exact: number | null): number | null {
   if (!ok(source)) return null;
   return ok(exact) && Math.abs(trunc2(exact) - source) < 1e-6 ? exact : source;
 }

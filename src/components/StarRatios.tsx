@@ -152,23 +152,23 @@ export default function StarRatios({
           rentable es la operación, qué tan eficiente es el uso de activos y cuánto se financia con deuda.
         </p>
         {typeof cur?.values.dp_carga_fiscal === "number" ? (
-          <div className="mt-4 flex flex-wrap items-stretch gap-2">
+          <div className="mt-4 flex flex-wrap items-stretch gap-1.5">
             {DUPONT.map((f, i) => (
-              <div key={f.key} className="flex items-center gap-2">
+              <div key={f.key} className="flex items-center gap-1.5">
                 {i > 0 && <span className="text-lg text-muted">×</span>}
-                <div className="w-44 rounded-xl border border-border bg-surface p-3" title={f.formula}>
+                <div className="w-[9.25rem] rounded-xl border border-border bg-surface p-3" title={f.formula}>
                   <div className="text-xs font-medium leading-snug">{f.nombre}</div>
                   <div className="mt-1 flex items-center justify-between">
                     <span className="text-lg font-semibold tabular-nums">{fmtFactor(cur.values[f.key], f.pct)}</span>
-                    <Sparkline values={seriesOf(f.key)} width={56} height={20} title={f.nombre} />
+                    <Sparkline values={seriesOf(f.key)} width={44} height={20} title={f.nombre} />
                   </div>
                   <div className="mt-1 text-[11px] leading-snug text-muted">{f.help}</div>
                 </div>
               </div>
             ))}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <span className="text-lg text-muted">=</span>
-              <div className="w-36 rounded-xl border border-brand bg-brand-soft p-3">
+              <div className="w-32 rounded-xl border border-brand bg-brand-soft p-3">
                 <div className="text-xs font-medium">ROE</div>
                 <div className="mt-1 text-2xl font-semibold tabular-nums">{typeof roe === "number" ? formatPercent(roe, 1) : "—"}</div>
                 <div className="mt-1 text-[11px] text-muted">Utilidad neta ÷ Patrimonio</div>

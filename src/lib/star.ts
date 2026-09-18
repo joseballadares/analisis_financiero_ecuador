@@ -1,5 +1,5 @@
 import type { Metrics } from "@/lib/db";
-import { derivedRatios } from "@/lib/derived";
+import { derivedRatios, exactIfConsistent } from "@/lib/derived";
 
 type Data = Record<string, number>;
 
@@ -81,6 +81,13 @@ export function advancedRatios(m: Metrics, niif?: Data, prev?: Data): YearRatios
   values.ccc =
     ok(dso) && values.dio !== null && values.per_med_pago !== null ? dso + values.dio - values.per_med_pago : null;
   flags.ccc = "estimado";
+
+  // Liquidez exacta desde el balance NIIF (la fuente la trunca a 2 decimales).
+  if (niif && ok(niif["101"]) && ok(niif["201"]) && niif["201"] > 0) {
+    const pc = niif["201"];
+    values.liquidez_corriente = exactIfConsistent(m.liquidez_corriente, niif["101"] / pc);
+    if (ok(niif["10103"])) values.prueba_acida = exactIfConsistent(m.prueba_acida, (niif["101"] - niif["10103"]) / pc);
+  }
 
   values.razon_inmediata =
     niif && ok(cash) && ok(niif["201"]) && niif["201"] > 0 ? cash / niif["201"] : null;
