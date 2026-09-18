@@ -2,6 +2,7 @@ import Link from "next/link";
 import ratiosData from "@/data/ratios.json";
 import { formatMoney, formatRatioValue } from "@/lib/format";
 import type { PeerGroup } from "@/lib/db";
+import { derivedRatios } from "@/lib/derived";
 
 const NAMES: Record<string, string> = Object.fromEntries(
   (ratiosData.indicadores as { key: string; nombre: string }[]).map((i) => [i.key, i.nombre])
@@ -20,7 +21,8 @@ export default function PeersTab({ group }: { group: PeerGroup | null }) {
       <p className="text-sm text-muted">
         Comparada con {group.total.toLocaleString("es-EC")} empresas de la {group.levelLabel} (CIIU{" "}
         <span className="font-mono">{group.prefix}</span>). Por ingresos ocupa el puesto{" "}
-        <strong className="text-foreground">{group.sizeRank}</strong> de {group.total + 1}.
+        <strong className="text-foreground">{group.sizeRank}</strong> de {group.total + 1}. ROE, ROA,
+        margen neto y endeudamiento se calculan con las cifras exactas de cada empresa.
       </p>
 
       <div className="overflow-hidden rounded-xl border border-border">
@@ -76,9 +78,11 @@ export default function PeersTab({ group }: { group: PeerGroup | null }) {
                   <td className="px-4 py-2.5 text-right tabular-nums">
                     {formatMoney(p.metrics.ingresos_totales as number)}
                   </td>
-                  <td className="px-4 py-2.5 text-right tabular-nums">{formatRatioValue("roe", p.metrics.roe)}</td>
                   <td className="px-4 py-2.5 text-right tabular-nums">
-                    {formatRatioValue("rent_neta_ventas", p.metrics.rent_neta_ventas)}
+                    {formatRatioValue("roe", derivedRatios(p.metrics).roe)}
+                  </td>
+                  <td className="px-4 py-2.5 text-right tabular-nums">
+                    {formatRatioValue("rent_neta_ventas", derivedRatios(p.metrics).rent_neta_ventas)}
                   </td>
                   <td className="px-4 py-2.5 text-right tabular-nums">
                     {formatRatioValue("liquidez_corriente", p.metrics.liquidez_corriente)}

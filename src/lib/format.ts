@@ -40,8 +40,12 @@ const PERCENT_KEYS = new Set([
 
 const DAYS_KEYS = new Set(["per_med_cobranza", "per_med_pago"]);
 
-export function formatRatioValue(key: string, value: number | null | undefined): string {
+export function formatRatioValue(
+  key: string,
+  value: number | null | undefined,
+  percentDecimals = 1
+): string {
   if (DAYS_KEYS.has(key)) return formatDays(value);
-  if (PERCENT_KEYS.has(key)) return formatPercent(value);
+  if (PERCENT_KEYS.has(key)) return formatPercent(value, percentDecimals);
   return formatNumber(value);
 }

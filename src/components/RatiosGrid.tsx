@@ -56,11 +56,11 @@ export default function RatiosGrid({
                         </span>
                       </td>
                       <td className="px-4 py-2.5 text-right font-medium tabular-nums whitespace-nowrap">
-                        {formatRatioValue(ind.key, value)}
+                        {formatRatioValue(ind.key, value, 0)}
                       </td>
                       {benchmark && (
                         <td className="px-4 py-2.5 text-right text-muted tabular-nums whitespace-nowrap">
-                          sector: {formatRatioValue(ind.key, bench ?? null)}
+                          sector: {formatRatioValue(ind.key, bench ?? null, 0)}
                         </td>
                       )}
                     </tr>
@@ -71,6 +71,11 @@ export default function RatiosGrid({
           </div>
         </div>
       ))}
+      <p className="text-xs text-muted">
+        Ratios publicados por la Superintendencia de Compañías, redondeados a 2 decimales en la
+        fuente. Algunos (por ejemplo margen y rentabilidad operacional) pueden no reflejar la
+        utilidad operacional real de la empresa.
+      </p>
     </div>
   );
 }

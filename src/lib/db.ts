@@ -1,4 +1,5 @@
 import { getDatabase } from "@netlify/database";
+import { derivedRatios } from "@/lib/derived";
 
 export function db() {
   return getDatabase();
@@ -77,7 +78,7 @@ const PEER_METRICS = [
   "roe",
   "roa",
   "rent_neta_ventas",
-  "margen_operacional",
+  "margen_bruto",
   "liquidez_corriente",
   "end_activo",
 ] as const;
@@ -143,12 +144,12 @@ export async function getPeerGroup(params: {
   if (total === 0) return null;
 
   const like = chosen.prefix + "%";
+  const own = derivedRatios(metrics);
   const companyValues: Record<string, number> = {};
   for (const k of PEER_METRICS) {
-    const v = metrics[k];
+    const v = own[k];
     if (typeof v === "number") companyValues[k] = v;
   }
-  const metricList = database.sql.raw(PEER_METRICS.map((k) => `('${k}')`).join(","));
 
   const [peers, stats] = await Promise.all([
     database.sql<PeerRow>`
@@ -162,13 +163,26 @@ export async function getPeerGroup(params: {
     `,
     database.sql<{ key: string; n: number; median: number | null; below: number }>`
       WITH g AS (
-        SELECT metrics FROM company_year_financials
+        SELECT (metrics->>'utilidad_neta')::float8 AS un,
+               (metrics->>'patrimonio')::float8 AS pat,
+               (metrics->>'activos')::float8 AS act,
+               (metrics->>'ingresos_totales')::float8 AS ing,
+               (metrics->>'margen_bruto')::float8 AS mb,
+               (metrics->>'liquidez_corriente')::float8 AS liq
+        FROM company_year_financials
         WHERE anio = ${anio} AND ciiu_n6 LIKE ${like} AND expediente <> ${expediente}
           AND (metrics->>'ingresos_totales')::float8 > 0
       ), m AS (
-        SELECT k.key, (g.metrics->>k.key)::float8 AS v
-        FROM g CROSS JOIN (VALUES ${metricList}) AS k(key)
-        WHERE g.metrics->>k.key IS NOT NULL
+        SELECT k.key, k.v
+        FROM g CROSS JOIN LATERAL (VALUES
+          ('roe', CASE WHEN g.pat > 0 THEN g.un / g.pat END),
+          ('roa', CASE WHEN g.act > 0 THEN g.un / g.act END),
+          ('rent_neta_ventas', CASE WHEN g.ing > 0 THEN g.un / g.ing END),
+          ('margen_bruto', g.mb),
+          ('liquidez_corriente', g.liq),
+          ('end_activo', CASE WHEN g.act > 0 THEN (g.act - g.pat) / g.act END)
+        ) AS k(key, v)
+        WHERE k.v IS NOT NULL
       ), cv AS (SELECT ${JSON.stringify(companyValues)}::jsonb AS c)
       SELECT m.key, count(*)::int AS n,
              percentile_cont(0.5) WITHIN GROUP (ORDER BY m.v) AS median,
@@ -186,7 +200,7 @@ export async function getPeerGroup(params: {
     peers,
     stats: PEER_METRICS.map((key) => {
       const s = byKey.get(key);
-      const value = typeof metrics[key] === "number" ? (metrics[key] as number) : null;
+      const value = typeof own[key] === "number" ? (own[key] as number) : null;
       return {
         key,
         value,
