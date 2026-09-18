@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   getSectorIndicators,
+  getSectorMedians,
   getCompaniesBySector,
   getLatestSectorYear,
   getTopLevelSectors,
@@ -26,8 +27,9 @@ export default async function SectorDetailPage({
   const sectorMeta = sectors.find((s: { codigo: string }) => s.codigo === ciiu);
   if (!sectorMeta) notFound();
 
-  const [indicators, companies] = await Promise.all([
+  const [indicators, medians, companies] = await Promise.all([
     getSectorIndicators(ciiu, anio),
+    getSectorMedians(ciiu, anio),
     getCompaniesBySector(ciiu, anio, 30),
   ]);
 
@@ -66,7 +68,7 @@ export default async function SectorDetailPage({
         <div>
           <h2 className="mb-4 text-lg font-semibold">Ratios promedio del sector — {anio}</h2>
           {indicators ? (
-            <RatiosGrid metrics={indicators.metrics as Record<string, number | null>} />
+            <RatiosGrid metrics={{ ...(indicators.metrics as Record<string, number | null>), ...medians }} />
           ) : (
             <p className="text-sm text-muted">Sin datos de indicadores para este año.</p>
           )}

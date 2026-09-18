@@ -72,9 +72,13 @@ export default function RatiosGrid({
         </div>
       ))}
       <p className="text-xs text-muted">
-        Ratios publicados por la Superintendencia de Compañías, redondeados a 2 decimales en la
-        fuente. Algunos (por ejemplo margen y rentabilidad operacional) pueden no reflejar la
-        utilidad operacional real de la empresa.
+        Rentabilidad (ROE, ROA, margen neto), endeudamiento patrimonial, apalancamiento, impacto de
+        gastos y períodos de cobranza y pago se recalculan con las cifras exactas de la empresa,
+        porque el archivo de la Superintendencia los trae con errores (signo perdido en pérdidas,
+        días inverosímiles). Un guion indica que no es calculable (p. ej. patrimonio negativo). El
+        período medio de pago se estima sobre el costo de ventas. Los demás ratios vienen tal cual
+        de la Superintendencia, redondeados a 2 decimales; margen y rentabilidad operacional pueden
+        no reflejar la utilidad operacional real.
       </p>
     </div>
   );

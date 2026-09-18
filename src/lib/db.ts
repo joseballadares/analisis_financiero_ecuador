@@ -166,7 +166,7 @@ export async function getPeerGroup(params: {
         SELECT (metrics->>'utilidad_neta')::float8 AS un,
                (metrics->>'patrimonio')::float8 AS pat,
                (metrics->>'activos')::float8 AS act,
-               (metrics->>'ingresos_totales')::float8 AS ing,
+               COALESCE(NULLIF((metrics->>'ingresos_ventas')::float8, 0), (metrics->>'ingresos_totales')::float8) AS ing,
                (metrics->>'margen_bruto')::float8 AS mb,
                (metrics->>'liquidez_corriente')::float8 AS liq
         FROM company_year_financials
@@ -254,6 +254,42 @@ export async function getSectorIndicators(
     SELECT * FROM sector_indicators WHERE ciiu_n1 = ${ciiuN1} AND anio = ${anio}
   `;
   return row ?? null;
+}
+
+// Medianas del sector recalculadas con los mismos ratios derivados que se muestran por empresa
+// (ver src/lib/derived.ts); las del CSV de sectores heredan los errores de la fuente.
+export async function getSectorMedians(ciiuN1: string, anio: number): Promise<Record<string, number | null>> {
+  const database = db();
+  const rows = await database.sql<{ key: string; median: number | null }>`
+    WITH g AS (
+      SELECT (metrics->>'utilidad_neta')::float8 AS un,
+             (metrics->>'patrimonio')::float8 AS pat,
+             (metrics->>'activos')::float8 AS act,
+             COALESCE(NULLIF((metrics->>'ingresos_ventas')::float8, 0), (metrics->>'ingresos_totales')::float8) AS ven,
+             (metrics->>'gastos_admin_ventas')::float8 AS gav,
+             (metrics->>'gastos_financieros')::float8 AS gfin,
+             (metrics->>'rot_cartera')::float8 AS rc
+      FROM company_year_financials
+      WHERE anio = ${anio} AND ciiu_n1 = ${ciiuN1}
+    ), m AS (
+      SELECT k.key, k.v
+      FROM g CROSS JOIN LATERAL (VALUES
+        ('roe', CASE WHEN g.pat > 0 THEN g.un / g.pat END),
+        ('roa', CASE WHEN g.act > 0 THEN g.un / g.act END),
+        ('rent_neta_ventas', CASE WHEN g.ven > 0 THEN g.un / g.ven END),
+        ('end_patrimonial', CASE WHEN g.act > 0 AND g.pat > 0 THEN (g.act - g.pat) / g.pat END),
+        ('apalancamiento', CASE WHEN g.act > 0 AND g.pat > 0 THEN g.act / g.pat END),
+        ('impac_gasto_a_v', CASE WHEN g.ven > 0 THEN g.gav / g.ven END),
+        ('impac_carga_finan', CASE WHEN g.ven > 0 THEN g.gfin / g.ven END),
+        ('per_med_cobranza', CASE WHEN g.rc > 0 THEN 365 / g.rc END)
+      ) AS k(key, v)
+      WHERE k.v IS NOT NULL AND g.ven > 0
+    )
+    SELECT key, percentile_cont(0.5) WITHIN GROUP (ORDER BY v) AS median FROM m GROUP BY key
+  `;
+  const out: Record<string, number | null> = { per_med_pago: null };
+  for (const r of rows) out[r.key] = r.median;
+  return out;
 }
 
 export async function getCompaniesBySector(

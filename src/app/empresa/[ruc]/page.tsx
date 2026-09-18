@@ -6,12 +6,14 @@ import {
   getCompanyBalanceSheet,
   getSectorIndicators,
   getPeerGroup,
+  getSectorMedians,
   type CompanyYearFinancial,
 } from "@/lib/db";
 import { formatMoney, formatNumber } from "@/lib/format";
 import RatiosGrid from "@/components/RatiosGrid";
 import BalanceSheetView from "@/components/BalanceSheetView";
 import PeersTab from "@/components/PeersTab";
+import { withDerived, paymentDays } from "@/lib/derived";
 import Tabs from "@/components/Tabs";
 
 export const dynamic = "force-dynamic";
@@ -47,9 +49,10 @@ export default async function EmpresaPage({
   const current = financials.find((f) => f.anio === selectedYear) ?? financials[0];
   const m = current.metrics;
 
-  const [balanceSheet, sectorBenchmark, peerGroup] = await Promise.all([
+  const [balanceSheet, sectorBenchmark, sectorMedians, peerGroup] = await Promise.all([
     getCompanyBalanceSheet(company.expediente, current.anio),
     current.ciiu_n1 ? getSectorIndicators(current.ciiu_n1, current.anio) : Promise.resolve(null),
+    current.ciiu_n1 ? getSectorMedians(current.ciiu_n1, current.anio) : Promise.resolve(null),
     getPeerGroup({
       expediente: company.expediente,
       anio: current.anio,
@@ -57,6 +60,13 @@ export default async function EmpresaPage({
       metrics: m,
     }),
   ]);
+
+  const ratioMetrics = withDerived(m, {
+    per_med_pago: balanceSheet ? paymentDays(balanceSheet.data, balanceSheet.catalog_id) : null,
+  });
+  const ratioBenchmark = sectorBenchmark
+    ? { ...(sectorBenchmark.metrics as Record<string, number | null>), ...(sectorMedians ?? {}) }
+    : null;
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
@@ -112,14 +122,7 @@ export default async function EmpresaPage({
               id: "ratios",
               label: "Ratios financieros",
               content: (
-                <RatiosGrid
-                  metrics={m}
-                  benchmark={
-                    sectorBenchmark
-                      ? (sectorBenchmark.metrics as Record<string, number | null>)
-                      : null
-                  }
-                />
+                <RatiosGrid metrics={ratioMetrics} benchmark={ratioBenchmark} />
               ),
             },
             {
