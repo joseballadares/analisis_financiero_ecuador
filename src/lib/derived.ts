@@ -8,6 +8,30 @@ import type { Metrics } from "@/lib/db";
 // días). Estos ratios se recalculan de las cifras exactas de la misma fila.
 const ok = (x: number | null | undefined): x is number => typeof x === "number" && Number.isFinite(x);
 
+// Ingresos operacionales mínimos (USD) para considerar activa a una empresa: por debajo no hay
+// ratios ni comparables con sentido (p. ej. empresas recién constituidas o en hibernación).
+export const MIN_ACTIVE_REVENUE = 1000;
+
+export function isInactive(m: Metrics): boolean {
+  const ven = ok(m.ingresos_ventas) && m.ingresos_ventas > 0 ? m.ingresos_ventas : m.ingresos_totales;
+  return !(ok(ven) && ven >= MIN_ACTIVE_REVENUE);
+}
+
+// Ratios de estructura del balance, los únicos con sentido cuando no hay ingresos.
+export const STRUCTURE_KEYS = [
+  "liquidez_corriente",
+  "prueba_acida",
+  "end_activo",
+  "end_patrimonial",
+  "apalancamiento",
+  "end_corto_plazo",
+  "end_largo_plazo",
+  "fortaleza_patrimonial",
+  "end_patrimonial_ct",
+  "end_patrimonial_nct",
+  "apalancamiento_c_l_plazo",
+];
+
 const trunc2 = (x: number) => (x >= 0 ? Math.floor(x * 100 + 1e-9) : -Math.floor(-x * 100 + 1e-9)) / 100;
 
 // La fuente TRUNCA (no redondea) todos sus ratios a 2 decimales, lo que los sesga a la baja hasta

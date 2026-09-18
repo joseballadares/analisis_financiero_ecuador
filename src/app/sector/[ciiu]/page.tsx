@@ -66,9 +66,12 @@ export default async function SectorDetailPage({
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_1.2fr]">
         <div>
-          <h2 className="mb-4 text-lg font-semibold">Ratios (mediana) del sector — {anio}</h2>
+          <h2 className="mb-1 text-lg font-semibold">Ratios (mediana) del sector — {anio}</h2>
+          <p className="mb-4 text-xs text-muted">
+            Mediana de las {medians.n.toLocaleString("es-EC")} empresas activas de mayores ingresos del sector.
+          </p>
           {indicators ? (
-            <RatiosGrid metrics={{ ...(indicators.metrics as Record<string, number | null>), ...medians }} />
+            <RatiosGrid metrics={{ ...(indicators.metrics as Record<string, number | null>), ...medians.medians }} />
           ) : (
             <p className="text-sm text-muted">Sin datos de indicadores para este año.</p>
           )}

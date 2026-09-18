@@ -8,7 +8,15 @@ const NAMES: Record<string, string> = Object.fromEntries(
   (ratiosData.indicadores as { key: string; nombre: string }[]).map((i) => [i.key, i.nombre])
 );
 
-export default function PeersTab({ group }: { group: PeerGroup | null }) {
+export default function PeersTab({ group, inactive = false }: { group: PeerGroup | null; inactive?: boolean }) {
+  if (inactive) {
+    return (
+      <p className="text-sm text-muted">
+        Esta empresa no reporta actividad operativa en este año (ingresos menores a $1.000), por lo que
+        no se generan comparables ni percentiles.
+      </p>
+    );
+  }
   if (!group) {
     return (
       <p className="text-sm text-muted">
@@ -19,9 +27,11 @@ export default function PeersTab({ group }: { group: PeerGroup | null }) {
   return (
     <div className="space-y-8">
       <p className="text-sm text-muted">
-        Comparada con {group.total.toLocaleString("es-EC")} empresas de la {group.levelLabel} (CIIU{" "}
+        Comparada con {group.total.toLocaleString("es-EC")} empresas activas de la {group.levelLabel} (CIIU{" "}
         <span className="font-mono">{group.prefix}</span>). Por ingresos ocupa el puesto{" "}
-        <strong className="text-foreground">{group.sizeRank}</strong> de {group.total + 1}. ROE, ROA,
+        <strong className="text-foreground">{group.sizeRank}</strong> de {group.total + 1}. La mediana y el
+        percentil se calculan sobre las {Math.min(group.total, 500).toLocaleString("es-EC")} empresas más
+        cercanas en tamaño. ROE, ROA,
         margen neto y endeudamiento se calculan con las cifras exactas de cada empresa.
       </p>
 

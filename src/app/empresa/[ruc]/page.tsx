@@ -4,16 +4,14 @@ import {
   getCompanyByRuc,
   getCompanyFinancials,
   getCompanyBalanceSheet,
-  getSectorIndicators,
   getPeerGroup,
-  getSectorMedians,
   type CompanyYearFinancial,
 } from "@/lib/db";
 import { formatMoney, formatNumber } from "@/lib/format";
 import RatiosGrid from "@/components/RatiosGrid";
 import BalanceSheetView from "@/components/BalanceSheetView";
 import PeersTab from "@/components/PeersTab";
-import { withDerived, paymentDays, fillFromBalance, needsBalanceFill } from "@/lib/derived";
+import { withDerived, paymentDays, fillFromBalance, needsBalanceFill, isInactive, STRUCTURE_KEYS } from "@/lib/derived";
 import Tabs from "@/components/Tabs";
 
 export const dynamic = "force-dynamic";
@@ -48,11 +46,7 @@ export default async function EmpresaPage({
   const selectedYear = anioParam ? parseInt(anioParam, 10) : years[0];
   const currentRaw = financials.find((f) => f.anio === selectedYear) ?? financials[0];
 
-  const [balanceSheet, sectorBenchmark, sectorMedians] = await Promise.all([
-    getCompanyBalanceSheet(company.expediente, currentRaw.anio),
-    currentRaw.ciiu_n1 ? getSectorIndicators(currentRaw.ciiu_n1, currentRaw.anio) : Promise.resolve(null),
-    currentRaw.ciiu_n1 ? getSectorMedians(currentRaw.ciiu_n1, currentRaw.anio) : Promise.resolve(null),
-  ]);
+  const balanceSheet = await getCompanyBalanceSheet(company.expediente, currentRaw.anio);
 
   // La fuente trae ceros para algunas empresas del último año aunque el balance sí existe.
   const filled = await Promise.all(
@@ -74,9 +68,9 @@ export default async function EmpresaPage({
   const ratioMetrics = withDerived(m, {
     per_med_pago: balanceSheet ? paymentDays(balanceSheet.data, balanceSheet.catalog_id) : null,
   });
-  const ratioBenchmark = sectorBenchmark
-    ? { ...(sectorBenchmark.metrics as Record<string, number | null>), ...(sectorMedians ?? {}) }
-    : null;
+  const ratioBenchmark = peerGroup?.benchmark.medians ?? null;
+  const inactive = isInactive(m);
+  const structureOnly = inactive && (m.activos ?? 0) >= 10000;
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
@@ -113,6 +107,17 @@ export default async function EmpresaPage({
         </div>
       </div>
 
+      {inactive && (
+        <div className="mt-6 rounded-xl border border-border bg-surface p-4 text-sm">
+          <strong>Sin actividad operativa reportada en {current.anio}.</strong>{" "}
+          <span className="text-muted">
+            Los ingresos son menores a $1.000, lo que sugiere una empresa pre-operativa, en hibernación o de
+            propósito limitado. No se calculan comparables ni ratios de rentabilidad o gestión porque no
+            tendrían significado.
+          </span>
+        </div>
+      )}
+
       <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Stat label="Ingresos" value={formatMoney(m.ingresos_ventas as number)} />
         <Stat label="Activos" value={formatMoney(m.activos as number)} />
@@ -131,14 +136,39 @@ export default async function EmpresaPage({
             {
               id: "ratios",
               label: "Ratios financieros",
-              content: (
-                <RatiosGrid metrics={ratioMetrics} benchmark={ratioBenchmark} />
+              content: inactive && !structureOnly ? (
+                <p className="text-sm text-muted">
+                  No hay ratios significativos: la empresa no reporta actividad operativa ni activos relevantes.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {peerGroup && !inactive && (
+                    <p className="text-sm text-muted">
+                      La referencia es la mediana de las {peerGroup.benchmark.n.toLocaleString("es-EC")} empresas
+                      activas más cercanas en tamaño de la {peerGroup.levelLabel} (CIIU{" "}
+                      <span className="font-mono">{peerGroup.prefix}</span>).
+                    </p>
+                  )}
+                  {structureOnly && (
+                    <p className="text-sm text-muted">
+                      Solo se muestran ratios de estructura del balance; los de rentabilidad y gestión no
+                      aplican sin ingresos.
+                    </p>
+                  )}
+                  <RatiosGrid
+                    metrics={ratioMetrics}
+                    benchmark={inactive ? null : ratioBenchmark}
+                    benchmarkLabel="pares"
+                    only={structureOnly ? STRUCTURE_KEYS : undefined}
+                    hideNote={structureOnly}
+                  />
+                </div>
               ),
             },
             {
               id: "comparables",
               label: "Comparables",
-              content: <PeersTab group={peerGroup} />,
+              content: <PeersTab group={peerGroup} inactive={inactive} />,
             },
             {
               id: "estados",

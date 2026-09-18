@@ -22,15 +22,23 @@ const CATEGORY_LABELS: Record<string, string> = {
 export default function RatiosGrid({
   metrics,
   benchmark,
+  benchmarkLabel = "sector",
+  only,
+  hideNote = false,
 }: {
   metrics: Record<string, number | null>;
   benchmark?: Record<string, number | null> | null;
+  benchmarkLabel?: string;
+  only?: string[];
+  hideNote?: boolean;
 }) {
-  const indicadores = ratiosData.indicadores as Indicador[];
-  const byCategory = ratiosData.categorias.map((cat) => ({
-    categoria: cat,
-    items: indicadores.filter((i) => i.categoria === cat),
-  }));
+  const indicadores = (ratiosData.indicadores as Indicador[]).filter((i) => !only || only.includes(i.key));
+  const byCategory = ratiosData.categorias
+    .map((cat) => ({
+      categoria: cat,
+      items: indicadores.filter((i) => i.categoria === cat),
+    }))
+    .filter((c) => c.items.length > 0);
 
   return (
     <div className="space-y-8">
@@ -63,7 +71,7 @@ export default function RatiosGrid({
                       </td>
                       {benchmark && (
                         <td className="px-4 py-2.5 text-right text-muted tabular-nums whitespace-nowrap">
-                          sector: {formatRatioValue(ind.key, bench ?? null, DERIVED.has(ind.key) ? 1 : 0)}
+                          {benchmarkLabel}: {formatRatioValue(ind.key, bench ?? null, DERIVED.has(ind.key) ? 1 : 0)}
                         </td>
                       )}
                     </tr>
@@ -74,7 +82,7 @@ export default function RatiosGrid({
           </div>
         </div>
       ))}
-      <p className="text-xs text-muted">
+      {!hideNote && <p className="text-xs text-muted">
         Rentabilidad (neta y operacional), cobertura de intereses, apalancamiento, endeudamiento
         patrimonial, impacto de gastos y períodos de cobranza y pago se recalculan con las cifras
         exactas de la empresa (utilidad operacional = ingresos - costo de ventas - gastos de
@@ -85,7 +93,7 @@ export default function RatiosGrid({
         de activos también se recalculan exactos (la fuente los trunca a 2 decimales). Los demás
         ratios (liquidez, prueba ácida, otras rotaciones, estructura de pasivos) vienen de la
         Superintendencia, verificados contra los balances, con 2 decimales (truncados).
-      </p>
+      </p>}
     </div>
   );
 }
