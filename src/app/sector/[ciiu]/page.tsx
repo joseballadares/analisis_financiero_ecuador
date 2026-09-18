@@ -66,7 +66,7 @@ export default async function SectorDetailPage({
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_1.2fr]">
         <div>
-          <h2 className="mb-4 text-lg font-semibold">Ratios promedio del sector — {anio}</h2>
+          <h2 className="mb-4 text-lg font-semibold">Ratios (mediana) del sector — {anio}</h2>
           {indicators ? (
             <RatiosGrid metrics={{ ...(indicators.metrics as Record<string, number | null>), ...medians }} />
           ) : (
