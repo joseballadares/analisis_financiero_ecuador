@@ -53,6 +53,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const only = req.nextUrl.searchParams.get("only");
+  const fileIndexParam = req.nextUrl.searchParams.get("fileIndex");
+  const fileIndex = fileIndexParam !== null ? parseInt(fileIndexParam, 10) : null;
 
   const store = getStore({ name: "afe-seed" });
   const db = getDatabase();
@@ -61,8 +63,9 @@ export async function POST(req: NextRequest) {
   for (const t of TABLES) {
     if (only && t.table !== only) continue;
     const started = Date.now();
+    const filesToLoad = fileIndex !== null ? [t.files[fileIndex]] : t.files;
     try {
-      for (const file of t.files) {
+      for (const file of filesToLoad) {
         const blob = await store.get(file, { type: "stream" });
         if (!blob) {
           results[t.table] = `${file}: not found in blob store`;
@@ -83,7 +86,7 @@ export async function POST(req: NextRequest) {
           client.release();
         }
       }
-      results[t.table] = `ok (${t.files.length} archivo(s)) en ${((Date.now() - started) / 1000).toFixed(1)}s`;
+      results[t.table] = `ok (${filesToLoad.length} archivo(s)) en ${((Date.now() - started) / 1000).toFixed(1)}s`;
     } catch (e) {
       results[t.table] = `error: ${(e as Error).message}`;
     }
