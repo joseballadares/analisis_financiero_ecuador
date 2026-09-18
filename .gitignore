@@ -38,6 +38,7 @@ yarn-error.log*
 
 # netlify
 .netlify
+deno.lock
 
 # typescript
 *.tsbuildinfo
