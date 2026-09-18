@@ -258,49 +258,83 @@ export async function getSectorIndicators(
 
 // Medianas del sector recalculadas con los mismos ratios derivados que se muestran por empresa
 // (ver src/lib/derived.ts); las del CSV de sectores heredan los errores de la fuente.
+const SOURCE_SECTOR_KEYS = [
+  "liquidez_corriente",
+  "prueba_acida",
+  "end_activo_fijo",
+  "end_corto_plazo",
+  "end_largo_plazo",
+  "fortaleza_patrimonial",
+  "end_patrimonial_ct",
+  "end_patrimonial_nct",
+  "apalancamiento_c_l_plazo",
+  "rot_cartera",
+  "rot_activo_fijo",
+  "rot_ventas",
+  "margen_bruto",
+];
+
+// Medianas del sector calculadas desde las empresas (no promedios): el CSV de sectores trae
+// promedios arrastrados por casos extremos (liquidez 23,7, rotación de cartera 19.886) y los
+// ratios dañados de la fuente (ver src/lib/derived.ts). Los ratios de la fuente que se
+// verificaron contra los balances se toman de las filas de cada empresa, excluyendo ceros.
 export async function getSectorMedians(ciiuN1: string, anio: number): Promise<Record<string, number | null>> {
   const database = db();
-  const rows = await database.sql<{ key: string; median: number | null }>`
-    WITH g AS (
-      SELECT (metrics->>'utilidad_neta')::float8 AS un,
-             (metrics->>'patrimonio')::float8 AS pat,
-             (metrics->>'activos')::float8 AS act,
-             COALESCE(NULLIF((metrics->>'ingresos_ventas')::float8, 0), (metrics->>'ingresos_totales')::float8) AS ven,
-             (metrics->>'gastos_admin_ventas')::float8 AS gav,
-             (metrics->>'gastos_financieros')::float8 AS gfin,
-             (metrics->>'rot_cartera')::float8 AS rc,
-             (metrics->>'rot_activo_fijo')::float8 AS raf,
-             (metrics->>'utilidad_an_imp')::float8 AS uai,
-             COALESCE((metrics->>'ingresos_ventas')::float8, 0) - COALESCE((metrics->>'costos_ventas_prod')::float8, 0)
-               - COALESCE((metrics->>'gastos_admin_ventas')::float8, 0) AS uo
-      FROM company_year_financials
-      WHERE anio = ${anio} AND ciiu_n1 = ${ciiuN1}
-    ), m AS (
-      SELECT k.key, k.v
-      FROM g CROSS JOIN LATERAL (VALUES
-        ('roe', CASE WHEN g.pat > 0 THEN g.un / g.pat END),
-        ('roa', CASE WHEN g.act > 0 THEN g.un / g.act END),
-        ('rent_neta_ventas', CASE WHEN g.ven > 0 THEN g.un / g.ven END),
-        ('end_patrimonial', CASE WHEN g.act > 0 AND g.pat > 0 THEN (g.act - g.pat) / g.pat END),
-        ('apalancamiento', CASE WHEN g.act > 0 AND g.pat > 0 THEN g.act / g.pat END),
-        ('impac_gasto_a_v', CASE WHEN g.ven > 0 THEN g.gav / g.ven END),
-        ('impac_carga_finan', CASE WHEN g.ven > 0 THEN g.gfin / g.ven END),
-        ('per_med_cobranza', CASE WHEN g.rc > 0 THEN 365 / g.rc END),
-        ('margen_operacional', CASE WHEN g.ven > 0 THEN g.uo / g.ven END),
-        ('rent_ope_patrimonio', CASE WHEN g.pat > 0 THEN g.uo / g.pat END),
-        ('rent_ope_activo', CASE WHEN g.act > 0 THEN g.uo / g.act END),
-        ('cobertura_interes', CASE WHEN g.gfin > 0 THEN g.uo / g.gfin END),
-        ('rent_neta_activo', CASE WHEN g.act > 0 THEN g.un / g.act END),
-        ('end_activo_fijo', CASE WHEN g.pat > 0 AND g.ven > 0 AND g.raf > 0 THEN g.pat * g.raf / g.ven END),
-        ('apalancamiento_financiero', CASE WHEN g.uai IS NOT NULL AND g.uai <> 0 AND g.uai + g.gfin > 0 AND g.pat > 0 AND g.act > 0
-                                          THEN (g.uai / g.pat) / ((g.uai + g.gfin) / g.act) END)
-      ) AS k(key, v)
-      WHERE k.v IS NOT NULL AND g.ven > 0
-    )
-    SELECT key, percentile_cont(0.5) WITHIN GROUP (ORDER BY v) AS median FROM m GROUP BY key
-  `;
+  const keyList = database.sql.raw(SOURCE_SECTOR_KEYS.map((k) => `'${k}'`).join(","));
+  const [derived, fromSource] = await Promise.all([
+    database.sql<{ key: string; median: number | null }>`
+      WITH g AS (
+        SELECT (metrics->>'utilidad_neta')::float8 AS un,
+               (metrics->>'patrimonio')::float8 AS pat,
+               (metrics->>'activos')::float8 AS act,
+               COALESCE(NULLIF((metrics->>'ingresos_ventas')::float8, 0), (metrics->>'ingresos_totales')::float8) AS ven,
+               (metrics->>'gastos_admin_ventas')::float8 AS gav,
+               (metrics->>'gastos_financieros')::float8 AS gfin,
+               (metrics->>'rot_cartera')::float8 AS rc,
+               (metrics->>'rot_activo_fijo')::float8 AS raf,
+               (metrics->>'utilidad_an_imp')::float8 AS uai,
+               COALESCE((metrics->>'ingresos_ventas')::float8, 0) - COALESCE((metrics->>'costos_ventas_prod')::float8, 0)
+                 - COALESCE((metrics->>'gastos_admin_ventas')::float8, 0) AS uo
+        FROM company_year_financials
+        WHERE anio = ${anio} AND ciiu_n1 = ${ciiuN1}
+      ), m AS (
+        SELECT k.key, k.v
+        FROM g CROSS JOIN LATERAL (VALUES
+          ('roe', CASE WHEN g.pat > 0 THEN g.un / g.pat END),
+          ('roa', CASE WHEN g.act > 0 THEN g.un / g.act END),
+          ('rent_neta_ventas', CASE WHEN g.ven > 0 THEN g.un / g.ven END),
+          ('end_activo', CASE WHEN g.act > 0 THEN (g.act - g.pat) / g.act END),
+          ('end_patrimonial', CASE WHEN g.act > 0 AND g.pat > 0 THEN (g.act - g.pat) / g.pat END),
+          ('apalancamiento', CASE WHEN g.act > 0 AND g.pat > 0 THEN g.act / g.pat END),
+          ('impac_gasto_a_v', CASE WHEN g.ven > 0 THEN g.gav / g.ven END),
+          ('impac_carga_finan', CASE WHEN g.ven > 0 THEN g.gfin / g.ven END),
+          ('per_med_cobranza', CASE WHEN g.rc > 0 THEN 365 / g.rc END),
+          ('margen_operacional', CASE WHEN g.ven > 0 THEN g.uo / g.ven END),
+          ('rent_ope_patrimonio', CASE WHEN g.pat > 0 THEN g.uo / g.pat END),
+          ('rent_ope_activo', CASE WHEN g.act > 0 THEN g.uo / g.act END),
+          ('cobertura_interes', CASE WHEN g.gfin > 0 THEN g.uo / g.gfin END),
+          ('rent_neta_activo', CASE WHEN g.act > 0 THEN g.un / g.act END),
+          ('end_activo_fijo', CASE WHEN g.pat > 0 AND g.ven > 0 AND g.raf > 0 THEN g.pat * g.raf / g.ven END),
+          ('apalancamiento_financiero', CASE WHEN g.uai IS NOT NULL AND g.uai <> 0 AND g.uai + g.gfin > 0 AND g.pat > 0 AND g.act > 0
+                                            THEN (g.uai / g.pat) / ((g.uai + g.gfin) / g.act) END)
+        ) AS k(key, v)
+        WHERE k.v IS NOT NULL AND g.ven > 0
+      )
+      SELECT key, percentile_cont(0.5) WITHIN GROUP (ORDER BY v) AS median FROM m GROUP BY key
+    `,
+    database.sql<{ key: string; median: number | null }>`
+      SELECT e.key, percentile_cont(0.5) WITHIN GROUP (ORDER BY e.value::float8) AS median
+      FROM company_year_financials f, jsonb_each_text(f.metrics) AS e
+      WHERE f.anio = ${anio} AND f.ciiu_n1 = ${ciiuN1}
+        AND (f.metrics->>'ingresos_totales')::float8 > 0
+        AND e.key IN (${keyList})
+        AND e.value IS NOT NULL AND e.value::float8 <> 0
+      GROUP BY e.key
+    `,
+  ]);
   const out: Record<string, number | null> = { per_med_pago: null };
-  for (const r of rows) out[r.key] = r.median;
+  for (const r of fromSource) out[r.key] = r.median;
+  for (const r of derived) out[r.key] = r.median;
   return out;
 }
 
