@@ -168,6 +168,7 @@ export async function getPeerGroup(params: {
                (metrics->>'activos')::float8 AS act,
                COALESCE(NULLIF((metrics->>'ingresos_ventas')::float8, 0), (metrics->>'ingresos_totales')::float8) AS ing,
                (metrics->>'margen_bruto')::float8 AS mb,
+               (metrics->>'costos_ventas_prod')::float8 AS cvp,
                (metrics->>'liquidez_corriente')::float8 AS liq
         FROM company_year_financials
         WHERE anio = ${anio} AND ciiu_n6 LIKE ${like} AND expediente <> ${expediente}
@@ -178,7 +179,7 @@ export async function getPeerGroup(params: {
           ('roe', CASE WHEN g.pat > 0 THEN g.un / g.pat END),
           ('roa', CASE WHEN g.act > 0 THEN g.un / g.act END),
           ('rent_neta_ventas', CASE WHEN g.ing > 0 THEN g.un / g.ing END),
-          ('margen_bruto', g.mb),
+          ('margen_bruto', CASE WHEN g.mb IS NOT NULL AND g.cvp > 0 AND g.ing > 0 THEN (g.ing - g.cvp) / g.ing ELSE g.mb END),
           ('liquidez_corriente', g.liq),
           ('end_activo', CASE WHEN g.act > 0 THEN (g.act - g.pat) / g.act END)
         ) AS k(key, v)
@@ -270,8 +271,6 @@ const SOURCE_SECTOR_KEYS = [
   "apalancamiento_c_l_plazo",
   "rot_cartera",
   "rot_activo_fijo",
-  "rot_ventas",
-  "margen_bruto",
 ];
 
 // Medianas del sector calculadas desde las empresas (no promedios): el CSV de sectores trae
@@ -293,6 +292,7 @@ export async function getSectorMedians(ciiuN1: string, anio: number): Promise<Re
                (metrics->>'rot_cartera')::float8 AS rc,
                (metrics->>'rot_activo_fijo')::float8 AS raf,
                (metrics->>'utilidad_an_imp')::float8 AS uai,
+               (metrics->>'costos_ventas_prod')::float8 AS cvp,
                COALESCE((metrics->>'ingresos_ventas')::float8, 0) - COALESCE((metrics->>'costos_ventas_prod')::float8, 0)
                  - COALESCE((metrics->>'gastos_admin_ventas')::float8, 0) AS uo
         FROM company_year_financials
@@ -304,6 +304,8 @@ export async function getSectorMedians(ciiuN1: string, anio: number): Promise<Re
           ('roa', CASE WHEN g.act > 0 THEN g.un / g.act END),
           ('rent_neta_ventas', CASE WHEN g.ven > 0 THEN g.un / g.ven END),
           ('end_activo', CASE WHEN g.act > 0 THEN (g.act - g.pat) / g.act END),
+          ('margen_bruto', CASE WHEN g.cvp > 0 THEN (g.ven - g.cvp) / g.ven END),
+          ('rot_ventas', CASE WHEN g.act > 0 THEN g.ven / g.act END),
           ('end_patrimonial', CASE WHEN g.act > 0 AND g.pat > 0 THEN (g.act - g.pat) / g.pat END),
           ('apalancamiento', CASE WHEN g.act > 0 AND g.pat > 0 THEN g.act / g.pat END),
           ('impac_gasto_a_v', CASE WHEN g.ven > 0 THEN g.gav / g.ven END),

@@ -81,9 +81,10 @@ export default function RatiosGrid({
         administración y ventas), porque el archivo de la Superintendencia los trae con errores
         (signo perdido en pérdidas, días inverosímiles, utilidad operacional inconsistente). Un
         guion indica que no es calculable (p. ej. patrimonio negativo). El período medio de pago se
-        estima sobre el costo de ventas. Los demás ratios (liquidez, rotaciones, estructura de
-        pasivos) vienen de la Superintendencia, verificados contra los balances, redondeados a 2
-        decimales.
+        estima sobre el costo de ventas. El margen bruto, el endeudamiento del activo y la rotación
+        de activos también se recalculan exactos (la fuente los trunca a 2 decimales). Los demás
+        ratios (liquidez, prueba ácida, otras rotaciones, estructura de pasivos) vienen de la
+        Superintendencia, verificados contra los balances, con 2 decimales (truncados).
       </p>
     </div>
   );

@@ -13,7 +13,7 @@ import { formatMoney, formatNumber } from "@/lib/format";
 import RatiosGrid from "@/components/RatiosGrid";
 import BalanceSheetView from "@/components/BalanceSheetView";
 import PeersTab from "@/components/PeersTab";
-import { withDerived, paymentDays } from "@/lib/derived";
+import { withDerived, paymentDays, fillFromBalance, needsBalanceFill } from "@/lib/derived";
 import Tabs from "@/components/Tabs";
 
 export const dynamic = "force-dynamic";
@@ -46,20 +46,30 @@ export default async function EmpresaPage({
 
   const years = financials.map((f) => f.anio);
   const selectedYear = anioParam ? parseInt(anioParam, 10) : years[0];
-  const current = financials.find((f) => f.anio === selectedYear) ?? financials[0];
-  const m = current.metrics;
+  const currentRaw = financials.find((f) => f.anio === selectedYear) ?? financials[0];
 
-  const [balanceSheet, sectorBenchmark, sectorMedians, peerGroup] = await Promise.all([
-    getCompanyBalanceSheet(company.expediente, current.anio),
-    current.ciiu_n1 ? getSectorIndicators(current.ciiu_n1, current.anio) : Promise.resolve(null),
-    current.ciiu_n1 ? getSectorMedians(current.ciiu_n1, current.anio) : Promise.resolve(null),
-    getPeerGroup({
-      expediente: company.expediente,
-      anio: current.anio,
-      ciiuN6: current.ciiu_n6,
-      metrics: m,
-    }),
+  const [balanceSheet, sectorBenchmark, sectorMedians] = await Promise.all([
+    getCompanyBalanceSheet(company.expediente, currentRaw.anio),
+    currentRaw.ciiu_n1 ? getSectorIndicators(currentRaw.ciiu_n1, currentRaw.anio) : Promise.resolve(null),
+    currentRaw.ciiu_n1 ? getSectorMedians(currentRaw.ciiu_n1, currentRaw.anio) : Promise.resolve(null),
   ]);
+
+  // La fuente trae ceros para algunas empresas del último año aunque el balance sí existe.
+  const filled = await Promise.all(
+    financials.map(async (f) => {
+      if (f.anio < 2019 || !needsBalanceFill(f.metrics)) return f;
+      const bs = f.anio === currentRaw.anio ? balanceSheet : await getCompanyBalanceSheet(company.expediente, f.anio);
+      return bs ? { ...f, metrics: fillFromBalance(f.metrics, bs.data, bs.catalog_id) } : f;
+    }),
+  );
+  const current = filled.find((f) => f.anio === currentRaw.anio) ?? filled[0];
+  const m = current.metrics;
+  const peerGroup = await getPeerGroup({
+    expediente: company.expediente,
+    anio: current.anio,
+    ciiuN6: current.ciiu_n6,
+    metrics: m,
+  });
 
   const ratioMetrics = withDerived(m, {
     per_med_pago: balanceSheet ? paymentDays(balanceSheet.data, balanceSheet.catalog_id) : null,
@@ -116,7 +126,7 @@ export default async function EmpresaPage({
             {
               id: "resumen",
               label: "Resumen",
-              content: <ResumenTab financials={financials} />,
+              content: <ResumenTab financials={filled} />,
             },
             {
               id: "ratios",

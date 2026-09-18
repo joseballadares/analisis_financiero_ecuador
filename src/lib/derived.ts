@@ -8,7 +8,20 @@ import type { Metrics } from "@/lib/db";
 // días). Estos ratios se recalculan de las cifras exactas de la misma fila.
 const ok = (x: number | null | undefined): x is number => typeof x === "number" && Number.isFinite(x);
 
+const trunc2 = (x: number) => (x >= 0 ? Math.floor(x * 100 + 1e-9) : -Math.floor(-x * 100 + 1e-9)) / 100;
+
+// La fuente TRUNCA (no redondea) todos sus ratios a 2 decimales, lo que los sesga a la baja hasta
+// 0,01 (p. ej. margen bruto 0,2596 aparece como 0,25). Se usa el valor exacto solo cuando
+// reproduce el de la fuente al truncarlo; si no coincide (costos mal declarados), se conserva el original.
+function exactIfConsistent(source: number | null | undefined, exact: number | null): number | null {
+  if (!ok(source)) return null;
+  return ok(exact) && Math.abs(trunc2(exact) - source) < 1e-6 ? exact : source;
+}
+
 export const DERIVED_KEYS = [
+  "end_activo",
+  "rot_ventas",
+  "margen_bruto",
   "roe",
   "roa",
   "rent_neta_ventas",
@@ -28,6 +41,7 @@ export const DERIVED_KEYS = [
 ] as const;
 
 export function derivedRatios(m: Metrics): Record<string, number | null> {
+  const partial = m.sin_detalle_operacional === 1;
   const un = m.utilidad_neta;
   const pat = m.patrimonio;
   const act = m.activos;
@@ -37,7 +51,7 @@ export function derivedRatios(m: Metrics): Record<string, number | null> {
   const posVen = ok(ven) && ven > 0;
   // Utilidad operacional según la definición de la Superintendencia:
   // ingresos - costo de ventas - gastos de administración y ventas.
-  const uo = posVen ? ven! - (m.costos_ventas_prod ?? 0) - (m.gastos_admin_ventas ?? 0) : null;
+  const uo = posVen && !partial ? ven! - (m.costos_ventas_prod ?? 0) - (m.gastos_admin_ventas ?? 0) : null;
   const gf = m.gastos_financieros;
   const uai = m.utilidad_an_imp;
   const uaii = ok(uai) && ok(gf) ? uai + gf : null;
@@ -48,8 +62,8 @@ export function derivedRatios(m: Metrics): Record<string, number | null> {
     end_patrimonial: posAct && posPat ? (act! - pat!) / pat! : null,
     apalancamiento: posAct && posPat ? act! / pat! : null,
     end_activo: posAct && ok(pat) ? (act! - pat) / act! : null,
-    impac_gasto_a_v: ok(m.gastos_admin_ventas) && posVen ? m.gastos_admin_ventas / ven! : null,
-    impac_carga_finan: ok(m.gastos_financieros) && posVen ? m.gastos_financieros / ven! : null,
+    impac_gasto_a_v: !partial && ok(m.gastos_admin_ventas) && posVen ? m.gastos_admin_ventas / ven! : null,
+    impac_carga_finan: !partial && ok(m.gastos_financieros) && posVen ? m.gastos_financieros / ven! : null,
     per_med_cobranza: ok(m.rot_cartera) && m.rot_cartera > 0 ? 365 / m.rot_cartera : null,
     per_med_pago: null,
     margen_operacional: ok(uo) && posVen ? uo / ven! : null,
@@ -60,10 +74,14 @@ export function derivedRatios(m: Metrics): Record<string, number | null> {
     end_activo_fijo:
       posPat && posVen && ok(m.rot_activo_fijo) && m.rot_activo_fijo > 0 ? (pat! * m.rot_activo_fijo) / ven! : null,
     apalancamiento_financiero:
-      ok(uai) && ok(uaii) && uaii > 0 && posPat && posAct && uai !== 0
+      !partial && ok(uai) && ok(uaii) && uaii > 0 && posPat && posAct && uai !== 0
         ? uai / pat! / (uaii / act!)
         : null,
-    margen_bruto: ok(m.margen_bruto) ? m.margen_bruto : null,
+    margen_bruto: exactIfConsistent(
+      m.margen_bruto,
+      posVen && ok(m.costos_ventas_prod) && m.costos_ventas_prod > 0 ? (ven! - m.costos_ventas_prod) / ven! : null,
+    ),
+    rot_ventas: exactIfConsistent(m.rot_ventas, posVen && posAct ? ven! / act! : null),
     liquidez_corriente: ok(m.liquidez_corriente) ? m.liquidez_corriente : null,
   };
 }
@@ -82,4 +100,35 @@ export function paymentDays(data: Record<string, number>, catalogId: number): nu
   const cxp = data["20103"];
   const costo = data["501"];
   return ok(cxp) && ok(costo) && cxp > 0 && costo > 0 ? (cxp / costo) * 365 : null;
+}
+
+// En 2025 la fuente (bi_ranking) trae ceros para ~1% de las empresas cuyo balance sí fue presentado.
+// Para esos casos se toman las cifras principales del balance (solo catálogo NIIF); los ratios que
+// requieren el detalle de gastos se omiten (marcados con sin_detalle_operacional).
+export function needsBalanceFill(m: Metrics): boolean {
+  return !(ok(m.activos) && m.activos > 0);
+}
+
+export function fillFromBalance(m: Metrics, data: Record<string, number>, catalogId: number): Metrics {
+  if (catalogId !== 3 || !needsBalanceFill(m)) return m;
+  const act = data["1"];
+  if (!ok(act) || act <= 0) return m;
+  const num = (x: number | undefined) => (ok(x) ? x : null);
+  const ven = num(data["401"]);
+  const cost = num(data["501"]);
+  const ac = num(data["101"]);
+  const pc = num(data["201"]);
+  return {
+    ...m,
+    activos: act,
+    patrimonio: num(data["3"]),
+    ingresos_ventas: ven,
+    ingresos_totales: ven !== null ? ven + (num(data["403"]) ?? 0) : null,
+    costos_ventas_prod: cost,
+    utilidad_neta: num(data["707"]),
+    liquidez_corriente: ac !== null && pc !== null && pc > 0 ? ac / pc : null,
+    margen_bruto: ven !== null && ven > 0 && cost !== null && cost > 0 ? (ven - cost) / ven : null,
+    rot_ventas: ven !== null && ven > 0 ? ven / act : null,
+    sin_detalle_operacional: 1,
+  };
 }
