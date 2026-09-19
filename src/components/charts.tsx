@@ -418,25 +418,26 @@ export function BubbleChart({ items, nationalGrowth }: { items: Bubble[]; nation
   const xTicks: number[] = [];
   for (let g = Math.ceil(gmin * 20) / 20; g <= gmax; g += 0.05) xTicks.push(Math.round(g * 100) / 100);
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-full" role="img">
+    <div className="overflow-x-auto">
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full min-w-[640px]" role="img">
       {yTicks.map((e) => (
         <g key={e}>
           <line x1={pl} x2={w - pr} y1={ys(Math.pow(10, e))} y2={ys(Math.pow(10, e))} style={{ stroke: C.graySoft }} />
-          <text x={pl - 6} y={ys(Math.pow(10, e)) + 4} textAnchor="end" className="fill-muted" fontSize="11">
+          <text x={pl - 6} y={ys(Math.pow(10, e)) + 4} textAnchor="end" className="fill-muted" fontSize="12">
             {formatCompactMoney(Math.pow(10, e))}
           </text>
         </g>
       ))}
       {xTicks.map((g) => (
-        <text key={g} x={xs(g)} y={h - 22} textAnchor="middle" className="fill-muted" fontSize="11">
+        <text key={g} x={xs(g)} y={h - 22} textAnchor="middle" className="fill-muted" fontSize="12">
           {formatPercent(g, 0)}
         </text>
       ))}
       <line x1={xs(nationalGrowth)} x2={xs(nationalGrowth)} y1={pt} y2={h - pb} strokeDasharray="4 4" style={{ stroke: C.gray }} />
-      <text x={xs(nationalGrowth) + 4} y={pt - 6} className="fill-muted" fontSize="10">
+      <text x={xs(nationalGrowth) + 4} y={pt - 6} className="fill-muted" fontSize="11">
         crecimiento nacional {formatPercent(nationalGrowth, 1)}
       </text>
-      <text x={(pl + w - pr) / 2} y={h - 4} textAnchor="middle" className="fill-muted" fontSize="11">
+      <text x={(pl + w - pr) / 2} y={h - 4} textAnchor="middle" className="fill-muted" fontSize="12">
         Crecimiento de ingresos vs año anterior
       </text>
       {pts.map((b) => (
@@ -450,11 +451,12 @@ export function BubbleChart({ items, nationalGrowth }: { items: Bubble[]; nation
           >
             <title>{`${b.label}: ${formatPercent(b.growth, 1)} · ${formatCompactMoney(b.revenue)}`}</title>
           </circle>
-          <text x={xs(b.growth)} y={ys(b.revenue) + 3} textAnchor="middle" fontSize="10" className="fill-foreground">
+          <text x={xs(b.growth)} y={ys(b.revenue) + 3} textAnchor="middle" fontSize="11" className="fill-foreground">
             {b.id}
           </text>
         </g>
       ))}
     </svg>
+    </div>
   );
 }
