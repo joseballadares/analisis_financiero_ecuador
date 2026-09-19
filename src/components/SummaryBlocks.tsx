@@ -48,7 +48,7 @@ function Tile({ label, value, chip, note, tone, title }: { label: string; value:
           </span>
         )}
       </div>
-      <div className="mt-1 truncate text-base font-semibold tabular-nums sm:text-lg">{value}</div>
+      <div className="mt-1 break-words text-base font-semibold tabular-nums sm:text-lg">{value}</div>
       {note && <div className="mt-0.5 text-[11.5px] leading-snug text-muted">{note}</div>}
     </div>
   );
@@ -151,7 +151,7 @@ function StackBlock({ b, grow, height }: { b: Block; grow?: number; height?: str
         </span>
         {b.share !== null && <span className="text-xs font-semibold tabular-nums">{formatPercent(b.share, 1)}</span>}
       </div>
-      <div className="mt-0.5 truncate text-sm font-semibold tabular-nums">{formatMoney(b.value)}</div>
+      <div className="mt-0.5 break-words text-sm font-semibold tabular-nums">{formatMoney(b.value)}</div>
       {b.note && <div className="text-[11.5px] leading-snug text-muted">{b.note}</div>}
     </div>
   );

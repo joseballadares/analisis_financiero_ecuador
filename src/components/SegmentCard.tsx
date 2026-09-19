@@ -44,7 +44,7 @@ export default function SegmentCard({
       <ol className="mt-2 space-y-1.5 text-sm">
         {share.leaders.map((l, i) => (
           <li key={l.expediente} className="flex items-center justify-between gap-3">
-            <span className="min-w-0 truncate">
+            <span className="min-w-0 break-words">
               <span className="mr-2 text-muted">{i + 1}.</span>
               {l.ruc === ruc ? (
                 <strong>{l.nombre}</strong>

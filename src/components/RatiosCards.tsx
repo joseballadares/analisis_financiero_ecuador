@@ -86,7 +86,7 @@ export default function RatiosCards({
                       />
                       {showBenchmark && <Semaforo ratioKey={k} dist={dist[k]} dir={info.direction} width={72} />}
                     </div>
-                    <div className="mt-1.5 truncate text-[11px] leading-snug text-muted" title={info.formula}>
+                    <div className="mt-1.5 text-[11px] leading-snug text-muted" title={info.formula}>
                       {info.formula}
                     </div>
                     {prevYears.length > 0 && (

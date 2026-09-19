@@ -10,7 +10,8 @@ function shortName(name: string): string {
   const s = name
     .replace(/\s+(S\.?\s?A\.?(\s?S\.?)?|C\.?\s?LTDA\.?|CIA\.?\s?LTDA\.?|CIA\.?)\s*$/i, "")
     .trim();
-  return s || name;
+  const words = (s || name).split(/\s+/);
+  return words.length > 2 ? words.slice(0, 2).join(" ") : words.join(" ");
 }
 
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
@@ -121,7 +122,7 @@ function FragmentHeads({ me }: { me: string }) {
   return (
     <>
       <th className="border-l border-border px-3 py-1.5 text-right font-medium">Comparable</th>
-      <th className="max-w-32 truncate px-3 py-1.5 text-right font-semibold text-foreground" title={me}>
+      <th className="max-w-36 whitespace-normal break-words px-3 py-1.5 text-right font-semibold leading-tight text-foreground" title={me}>
         {me}
       </th>
     </>
