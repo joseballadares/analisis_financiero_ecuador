@@ -118,7 +118,10 @@ function Events({
         const i = categories.indexOf(String(e.year));
         if (i < 0) return null;
         const cx = x(i);
-        const anchor = cx > right - 110 ? "end" : "start";
+        // Si el siguiente evento queda cerca a la derecha, la etiqueta va a la izquierda de su línea para no encimarse.
+        const nextIdx = events.map((o) => categories.indexOf(String(o.year))).filter((j) => j > i).sort((a, b) => a - b)[0];
+        const crowded = nextIdx !== undefined && x(nextIdx) - cx < 150;
+        const anchor = crowded || cx > right - 110 ? "end" : "start";
         const tx = anchor === "end" ? cx - 4 : cx + 4;
         return (
           <g key={e.year}>
