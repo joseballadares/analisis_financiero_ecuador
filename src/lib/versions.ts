@@ -4,6 +4,16 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const RELEASES: Release[] = [
   {
+    version: "0.14",
+    date: "2026-09-18",
+    title: "Ranking por ingresos con filtros",
+    changes: [
+      "El ranking se ordena por ingresos operacionales y muestra las 1.000 empresas con más ingresos de cada año.",
+      "Columnas ordenables y filtros por nombre o RUC, sector y rango de ingresos, activos, utilidad neta, margen neto y ROE.",
+      "La cinta de la página principal indica cada dato: Ingresos, Margen y ROE.",
+    ],
+  },
+  {
     version: "0.13",
     date: "2026-09-18",
     title: "Nueva página principal",

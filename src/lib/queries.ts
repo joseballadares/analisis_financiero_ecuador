@@ -340,8 +340,9 @@ export type HomeCompany = {
 };
 
 // Las 500 empresas con más ingresos del año (base de las tarjetas aleatorias, la cinta y el top 10).
-export function getTopHome(anio: number): Promise<HomeCompany[]> {
-  return memo(`home:${anio}`, async () => {
+// Las empresas con más ingresos operacionales del año (por defecto las 500 de la página principal).
+export function getTopHome(anio: number, limit = 500): Promise<HomeCompany[]> {
+  return memo(`home:${anio}:${limit}`, async () => {
     const database = db();
     // Orden por ingresos operacionales (los mismos que se muestran); la posición de la SCVS usa otra base.
     const rows = await database.sql<{
@@ -355,7 +356,7 @@ export function getTopHome(anio: number): Promise<HomeCompany[]> {
       JOIN companies c ON c.expediente = f.expediente
       WHERE f.anio = ${anio} AND c.ruc IS NOT NULL AND ${database.sql.raw(VEN_F)} > 0
       ORDER BY ${database.sql.raw(VEN_F)} DESC
-      LIMIT 500
+      LIMIT ${limit}
     `;
     return rows
       .map((r, i) => {

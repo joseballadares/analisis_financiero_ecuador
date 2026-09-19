@@ -21,10 +21,13 @@ function Item({ c }: { c: HomeCompany }) {
       href={`/empresa/${c.ruc}`}
       className="flex shrink-0 items-center gap-3 border-r border-border px-5 py-2 text-xs hover:bg-surface"
     >
-      <span className="max-w-[16rem] truncate font-semibold" title={c.nombre}>
+      <span className="whitespace-nowrap font-semibold">
         {c.nombre}
       </span>
-      <span className="tabular-nums text-muted">{formatCompactMoney(c.ingresos)}</span>
+      <span className="inline-flex items-center gap-1 whitespace-nowrap">
+        <span className="text-muted">Ingresos</span>
+        <span className="font-medium tabular-nums">{formatCompactMoney(c.ingresos)}</span>
+      </span>
       <Delta label="Margen" value={c.margen} />
       <Delta label="ROE" value={c.roe} />
     </Link>
