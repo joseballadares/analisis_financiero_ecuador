@@ -23,6 +23,8 @@ import { ratiosByYear } from "@/lib/star";
 import { creditScore, riskFlags } from "@/lib/risk";
 import RiskTab from "@/components/RiskTab";
 import Tabs from "@/components/Tabs";
+import SearchBox from "@/components/SearchBox";
+import YearSelect from "@/components/YearSelect";
 
 export const dynamic = "force-dynamic";
 
@@ -163,6 +165,9 @@ export default async function EmpresaPage({
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10">
+      <div className="mb-8 max-w-xl">
+        <SearchBox compact />
+      </div>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">{company.nombre}</h1>
@@ -179,21 +184,7 @@ export default async function EmpresaPage({
             )}
           </p>
         </div>
-        <div className="flex items-center gap-1 flex-wrap">
-          {years.map((y) => (
-            <Link
-              key={y}
-              href={`/empresa/${ruc}?anio=${y}`}
-              className={`rounded-full px-3 py-1 text-sm transition-colors ${
-                y === current.anio
-                  ? "bg-brand text-white"
-                  : "border border-border text-muted hover:border-brand hover:text-brand"
-              }`}
-            >
-              {y}
-            </Link>
-          ))}
-        </div>
+        <YearSelect ruc={ruc} years={years} current={current.anio} />
       </div>
 
       {inactive && (
@@ -303,7 +294,23 @@ export default async function EmpresaPage({
                         </p>
                       )}
                     </div>
-                    {!inactive && <PeersTab group={peerGroup} />}
+                    {!inactive && (
+                      <PeersTab
+                        group={peerGroup}
+                        ownName={company.nombre}
+                        own={{
+                          ingresos: ownIngresos > 0 ? ownIngresos : null,
+                          roe: typeof curValues.roe === "number" ? curValues.roe : null,
+                          margen: typeof curValues.rent_neta_ventas === "number" ? curValues.rent_neta_ventas : null,
+                          liquidez:
+                            typeof curValues.liquidez_corriente === "number"
+                              ? curValues.liquidez_corriente
+                              : typeof m.liquidez_corriente === "number"
+                                ? m.liquidez_corriente
+                                : null,
+                        }}
+                      />
+                    )}
                   </div>
                 ),
             },

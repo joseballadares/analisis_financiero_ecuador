@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 type Result = { expediente: number; ruc: string; nombre: string; provincia: string | null };
 
-export default function SearchBox({ autoFocus = false }: { autoFocus?: boolean }) {
+export default function SearchBox({ autoFocus = false, compact = false }: { autoFocus?: boolean; compact?: boolean }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Result[]>([]);
   const [open, setOpen] = useState(false);
@@ -54,7 +54,9 @@ export default function SearchBox({ autoFocus = false }: { autoFocus?: boolean }
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => results.length > 0 && setOpen(true)}
         placeholder="Busca por nombre de empresa o RUC..."
-        className="w-full rounded-xl border border-border bg-surface px-5 py-4 text-base shadow-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition"
+        className={`w-full rounded-xl border border-border bg-surface shadow-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition ${
+          compact ? "px-4 py-2.5 text-sm" : "px-5 py-4 text-base"
+        }`}
       />
       {open && (query.trim().length >= 2) && (
         <div className="absolute z-10 mt-2 w-full overflow-hidden rounded-xl border border-border bg-surface shadow-lg">
