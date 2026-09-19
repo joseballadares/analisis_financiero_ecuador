@@ -84,3 +84,28 @@ body {
   border-left: 1px solid var(--muted);
 }
 .dtree > ul > li::before, .dtree > ul > li::after { display: none; }
+
+/* Cinta de empresas (página principal): se desplaza de derecha a izquierda y se pausa al pasar el cursor. */
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.marquee-track {
+  animation: marquee-scroll 140s linear infinite;
+}
+.marquee:hover .marquee-track,
+.marquee:focus-within .marquee-track {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+  .marquee-viewport {
+    overflow-x: auto;
+  }
+}

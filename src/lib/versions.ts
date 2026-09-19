@@ -4,6 +4,17 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const RELEASES: Release[] = [
   {
+    version: "0.13",
+    date: "2026-09-18",
+    title: "Nueva página principal",
+    changes: [
+      "Cinta de empresas que se desplaza de derecha a izquierda, con ingresos, margen neto y ROE del último año.",
+      "Tarjetas de empresas destacadas elegidas al azar entre las 500 con más ingresos, con botón para mostrar otras.",
+      "Top 10 de empresas por ingresos, con activos, utilidad neta, margen neto y ROE.",
+      "Cifras del país (empresas, ingresos y activos totales con su variación) y los seis sectores más grandes.",
+    ],
+  },
+  {
     version: "0.12",
     date: "2026-09-18",
     title: "Informe profesional en PDF",

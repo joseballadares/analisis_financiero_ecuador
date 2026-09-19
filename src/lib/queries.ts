@@ -1,5 +1,5 @@
 import { db, VEN, type ChartOfAccountsEntryRow } from "@/lib/db";
-import { MIN_ACTIVE_REVENUE } from "@/lib/derived";
+import { MIN_ACTIVE_REVENUE, derivedRatios } from "@/lib/derived";
 
 const VEN_F = VEN.replace(/metrics/g, "f.metrics");
 const VEN_C = VEN.replace(/metrics/g, "c.metrics");
@@ -324,4 +324,55 @@ export async function getCiiuDescription(code: string | null): Promise<string | 
     if (row) return row.descripcion;
   }
   return null;
+}
+
+// ── Página principal ──────────────────────────────────────────────────────────────────────────
+export type HomeCompany = {
+  ruc: string;
+  nombre: string;
+  rank: number;
+  sector: string | null;
+  ingresos: number;
+  activos: number | null;
+  utilidad: number | null;
+  margen: number | null;
+  roe: number | null;
+};
+
+// Las 500 empresas con más ingresos del año (base de las tarjetas aleatorias, la cinta y el top 10).
+export function getTopHome(anio: number): Promise<HomeCompany[]> {
+  return memo(`home:${anio}`, async () => {
+    const database = db();
+    const rows = await database.sql<{
+      ruc: string | null;
+      nombre: string;
+      posicion_general: number;
+      ciiu_n1: string | null;
+      metrics: Record<string, number | null>;
+    }>`
+      SELECT c.ruc, c.nombre, f.posicion_general, f.ciiu_n1, f.metrics
+      FROM company_year_financials f
+      JOIN companies c ON c.expediente = f.expediente
+      WHERE f.anio = ${anio} AND f.posicion_general IS NOT NULL AND c.ruc IS NOT NULL
+      ORDER BY f.posicion_general ASC
+      LIMIT 500
+    `;
+    return rows
+      .map((r) => {
+        const d = derivedRatios(r.metrics);
+        const ing = (r.metrics.ingresos_ventas ?? 0) > 0 ? (r.metrics.ingresos_ventas as number) : (r.metrics.ingresos_totales ?? 0);
+        return {
+          ruc: r.ruc as string,
+          nombre: r.nombre,
+          rank: r.posicion_general,
+          sector: r.ciiu_n1,
+          ingresos: ing,
+          activos: r.metrics.activos ?? null,
+          utilidad: r.metrics.utilidad_neta ?? null,
+          margen: d.rent_neta_ventas,
+          roe: d.roe,
+        };
+      })
+      .filter((r) => r.ingresos > 0);
+  });
 }
