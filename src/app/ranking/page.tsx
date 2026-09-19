@@ -49,8 +49,8 @@ export default async function RankingPage({
         <div className="mt-4">{header}</div>
         <p className="mt-5 max-w-3xl text-muted">
           Empresas que vale la pena leer y seguir en el tiempo, elegidas con reglas automáticas sobre la ventana {pool.desde}–
-          {pool.anio}. Cada una aparece por una o más señales, y puedes filtrar por ellas. No es una recomendación de
-          inversión.
+          {pool.anio}. Cada una aparece por una o más señales; toca una señal para ver solo esas empresas y usa las flechas
+          para ordenar. No es una recomendación de inversión.
         </p>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           <Stat label="Empresas evaluadas" value={pool.evaluadas.toLocaleString("es-EC")} note={`las 2.000 con más ingresos de ${pool.anio}`} />
@@ -100,9 +100,8 @@ export default async function RankingPage({
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Ranking de empresas</h1>
           <div className="mt-4">{header}</div>
           <p className="mt-5 max-w-2xl text-muted">
-            Las {LIMIT.toLocaleString("es-EC")} empresas con más ingresos operacionales — {anio}. Ordena con clic en el
-            título de cada columna y filtra por nombre, sector o rango de cada indicador (importes en millones de
-            dólares, ratios en porcentaje).
+            Las {LIMIT.toLocaleString("es-EC")} empresas con más ingresos operacionales — {anio}. Usa las flechas
+            de cada columna para ordenar de mayor a menor o de menor a mayor.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-1">

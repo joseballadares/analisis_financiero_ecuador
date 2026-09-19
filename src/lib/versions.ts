@@ -9,7 +9,7 @@ export const RELEASES: Release[] = [
     title: "Empresas interesantes",
     changes: [
       "Las tarjetas de la portada pasan a ser empresas interesantes: seis señales sobre los últimos 5 años (rentabilidad sostenida, operación eficiente, mejora operativa, crecimiento sostenido, escalada en el ranking y giro de resultados), cada una con la razón que la destaca.",
-      "Nueva pestaña Empresas interesantes en el ranking, con la lista completa, filtros por señal, sector y nombre, y columnas ordenables.",
+      "Nueva pestaña Empresas interesantes en el ranking, con la lista completa, selección por señal y flechas para ordenar cada columna.",
       "La metodología explica población, controles de calidad, criterios y sesgos.",
     ],
   },
@@ -19,7 +19,7 @@ export const RELEASES: Release[] = [
     title: "Ranking por ingresos con filtros",
     changes: [
       "El ranking se ordena por ingresos operacionales y muestra las 1.000 empresas con más ingresos de cada año.",
-      "Columnas ordenables y filtros por nombre o RUC, sector y rango de ingresos, activos, utilidad neta, margen neto y ROE.",
+      "Flechas para ordenar de mayor a menor (o al revés) en cada columna del ranking.",
       "La cinta de la página principal indica cada dato: Ingresos, Margen y ROE.",
     ],
   },
