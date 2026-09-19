@@ -80,12 +80,22 @@ function MiniCurve({ item }: { item: DistItem }) {
   );
 }
 
-export default function DistributionChart({ items, groupLabel, n }: { items: DistItem[]; groupLabel: string; n: number }) {
+export default function DistributionChart({
+  items,
+  groupLabel,
+  n,
+  title = "Dónde se ubica frente a empresas de su sector y tamaño",
+}: {
+  items: DistItem[];
+  groupLabel: string;
+  n: number;
+  title?: string;
+}) {
   const shown = items.filter((i) => i.dist && i.dist.own !== null);
   if (shown.length === 0) return null;
   return (
     <div className="rounded-xl border border-border bg-surface p-4">
-      <h3 className="text-sm font-semibold">Dónde se ubica frente a empresas de su sector y tamaño</h3>
+      <h3 className="text-sm font-semibold">{title}</h3>
       <p className="mt-0.5 text-xs text-muted">
         Distribución (curva normal aproximada) de las {n.toLocaleString("es-EC")} empresas activas más cercanas en ingresos de la{" "}
         {groupLabel}. La barra vertical es la empresa; la línea punteada, la mediana.

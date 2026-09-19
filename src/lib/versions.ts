@@ -4,6 +4,17 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const RELEASES: Release[] = [
   {
+    version: "0.10",
+    date: "2026-09-18",
+    title: "Celular, puntaje con colores y distribución",
+    changes: [
+      "Gráficos con tamaño de texto legible en celular (se dibujan a un ancho distinto en pantallas angostas).",
+      "Ciclo de efectivo: se omiten plazos de cobro no significativos (más de 2 años) que deformaban la escala.",
+      "Puntaje de crédito con un color por letra (A verde, B lima, C amarillo, D naranja, E rojo) y escala con la posición de la empresa.",
+      "Alertas y crédito: curvas de distribución que muestran dónde está la empresa frente a sus pares en los indicadores del puntaje.",
+    ],
+  },
+  {
     version: "0.9",
     date: "2026-09-18",
     title: "Historial de versiones y legibilidad",

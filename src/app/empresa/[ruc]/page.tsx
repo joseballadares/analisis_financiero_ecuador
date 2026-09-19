@@ -320,7 +320,16 @@ export default async function EmpresaPage({
                   {
                     id: "riesgo",
                     label: alertCount > 0 ? `Alertas y crédito · ${alertCount}` : "Alertas y crédito",
-                    content: <RiskTab score={score} flags={flags} year={current.anio} />,
+                    content: (
+                      <RiskTab
+                        score={score}
+                        flags={flags}
+                        year={current.anio}
+                        dist={dist}
+                        groupLabel={peerGroup ? `${peerGroup.levelLabel} (CIIU ${peerGroup.prefix})` : null}
+                        benchN={peerGroup?.benchmark.n ?? 0}
+                      />
+                    ),
                   },
                 ]),
             {

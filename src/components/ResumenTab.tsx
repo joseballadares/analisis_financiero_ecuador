@@ -101,9 +101,11 @@ export default function ResumenTab({
   const pChange = change(pFirst, pLast);
 
   // Ciclo de efectivo
-  const dso = val("per_med_cobranza");
-  const dio = val("dio");
-  const dpo = val("per_med_pago");
+  // Días mayores a 2 años no son plazos reales (rotaciones casi nulas); se omiten para no deformar la escala.
+  const days = (k: string) => val(k).map((v) => (v !== null && v >= 0 && v <= 730 ? v : null));
+  const dso = days("per_med_cobranza");
+  const dio = days("dio");
+  const dpo = days("per_med_pago");
   const cccNow = num(byYear[currentYear]?.values.ccc);
   const cycleSeries: Series[] = [
     { name: "Cobro", color: C.blue, values: dso },

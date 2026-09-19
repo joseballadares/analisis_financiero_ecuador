@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { formatCompactMoney, formatPercent } from "@/lib/format";
 
 // Paleta de dos colores (azul = foco, gris = contexto). El rojo se reserva para eventos y alertas.
@@ -15,15 +16,27 @@ export type Series = {
   values: (number | null)[];
 };
 
-export type ChartEvent = { year: number; label: string };
+export type ChartEvent = { year: number; label: string; short?: string };
 
 export const EVENTS: ChartEvent[] = [
-  { year: 2020, label: "Pandemia" },
-  { year: 2024, label: "Crisis energética" },
+  { year: 2020, label: "Pandemia", short: "Pandemia" },
+  { year: 2024, label: "Crisis energética", short: "Crisis" },
 ];
 
-const W = 480;
-const H = 230;
+// El SVG se dibuja a dos anchos (escritorio y celular) y CSS muestra el que corresponde, para que el texto
+// conserve un tamaño legible en pantallas angostas en vez de encogerse con el gráfico.
+const DESKTOP = { w: 480, h: 230 };
+const MOBILE = { w: 320, h: 210 };
+
+function Dual({ render }: { render: (w: number, h: number) => ReactNode }) {
+  return (
+    <>
+      <div className="hidden sm:block">{render(DESKTOP.w, DESKTOP.h)}</div>
+      <div className="sm:hidden">{render(MOBILE.w, MOBILE.h)}</div>
+    </>
+  );
+}
+
 const isNum = (v: number | null | undefined): v is number => typeof v === "number" && Number.isFinite(v);
 
 function niceStep(range: number, ticks: number) {
@@ -83,13 +96,13 @@ function Legend({ series, trend }: { series: Series[]; trend?: boolean }) {
   );
 }
 
-function XLabels({ categories, x }: { categories: string[]; x: (i: number) => number }) {
+function XLabels({ categories, x, vh }: { categories: string[]; x: (i: number) => number; vh: number }) {
   const every = categories.length > 9 ? 2 : 1;
   return (
     <>
       {categories.map((c, i) =>
         i % every === 0 || i === categories.length - 1 ? (
-          <text key={c + i} x={x(i)} y={H - 8} textAnchor="middle" className="fill-muted" fontSize="11">
+          <text key={c + i} x={x(i)} y={vh - 8} textAnchor="middle" className="fill-muted" fontSize="11">
             {c}
           </text>
         ) : null,
@@ -104,12 +117,14 @@ function Events({
   x,
   bottom,
   right,
+  compact = false,
 }: {
   events?: ChartEvent[];
   categories: string[];
   x: (i: number) => number;
   bottom: number;
   right: number;
+  compact?: boolean;
 }) {
   if (!events?.length) return null;
   return (
@@ -120,14 +135,14 @@ function Events({
         const cx = x(i);
         // Si el siguiente evento queda cerca a la derecha, la etiqueta va a la izquierda de su línea para no encimarse.
         const nextIdx = events.map((o) => categories.indexOf(String(o.year))).filter((j) => j > i).sort((a, b) => a - b)[0];
-        const crowded = nextIdx !== undefined && x(nextIdx) - cx < 240 && cx > 150;
+        const crowded = nextIdx !== undefined && x(nextIdx) - cx < (compact ? 190 : 240) && cx > (compact ? 100 : 150);
         const anchor = crowded || cx > right - 110 ? "end" : "start";
         const tx = anchor === "end" ? cx - 4 : cx + 4;
         return (
           <g key={e.year}>
             <line x1={cx} x2={cx} y1={16} y2={bottom} strokeWidth="1.25" strokeDasharray="5 4" style={{ stroke: C.red, opacity: 0.85 }} />
             <text x={tx} y={11} textAnchor={anchor} fontSize="11" style={{ fill: C.red }}>
-              {e.year} {e.label}
+              {e.year} {compact && e.short ? e.short : e.label}
             </text>
           </g>
         );
@@ -175,7 +190,7 @@ function TrendLines({
 
 // Barras agrupadas. La última categoría se resalta con etiquetas de valor; el resto queda atenuado.
 // `tooltips` da un texto combinado por categoría al pasar el ratón (útil cuando una serie es muy pequeña).
-export function BarChart({
+function BarChartAt({
   categories,
   series,
   format = formatCompactMoney,
@@ -184,7 +199,11 @@ export function BarChart({
   labelLast = true,
   tooltips,
   legend = true,
+  vw,
+  vh,
 }: {
+  vw: number;
+  vh: number;
   categories: string[];
   series: Series[];
   format?: (v: number) => string;
@@ -197,8 +216,8 @@ export function BarChart({
   const PAD = { l: 52, r: 12, t: 24, b: 28 };
   const all = series.flatMap((s) => s.values);
   const { min, max, ticks } = scale(all);
-  const iw = W - PAD.l - PAD.r;
-  const ih = H - PAD.t - PAD.b;
+  const iw = vw - PAD.l - PAD.r;
+  const ih = vh - PAD.t - PAD.b;
   const y = (v: number) => PAD.t + ih - ((v - min) / (max - min)) * ih;
   const slot = iw / categories.length;
   const x = (i: number) => PAD.l + slot * i + slot / 2;
@@ -207,10 +226,10 @@ export function BarChart({
   const single = series.length === 1;
   return (
     <div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img">
+      <svg viewBox={`0 0 ${vw} ${vh}`} className="w-full" role="img">
         {ticks.map((t) => (
           <g key={t}>
-            <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} strokeWidth="1" style={{ stroke: C.graySoft }} />
+            <line x1={PAD.l} x2={vw - PAD.r} y1={y(t)} y2={y(t)} strokeWidth="1" style={{ stroke: C.graySoft }} />
             <text x={PAD.l - 6} y={y(t) + 4} textAnchor="end" className="fill-muted" fontSize="11">
               {format(t)}
             </text>
@@ -252,9 +271,9 @@ export function BarChart({
               </text>
             );
           })}
-        {trend && <TrendLines series={series} x={x} y={y} top={PAD.t} bottom={H - PAD.b} />}
-        <Events events={events} categories={categories} x={x} bottom={H - PAD.b} right={W} />
-        <XLabels categories={categories} x={x} />
+        {trend && <TrendLines series={series} x={x} y={y} top={PAD.t} bottom={vh - PAD.b} />}
+        <Events events={events} categories={categories} x={x} bottom={vh - PAD.b} right={vw} compact={vw < 400} />
+        <XLabels categories={categories} x={x} vh={vh} />
         {tooltips &&
           categories.map((c, i) => (
             <rect key={c + "hit"} x={x(i) - slot / 2} y={PAD.t} width={slot} height={ih} fill="transparent">
@@ -268,14 +287,18 @@ export function BarChart({
 }
 
 // Líneas con etiquetas directas al final (nombre y valor final) en lugar de leyenda.
-export function LineChart({
+function LineChartAt({
   categories,
   series,
   format = (v: number) => formatPercent(v, 0),
   trend = false,
   events,
   endLabels = false,
+  vw,
+  vh,
 }: {
+  vw: number;
+  vh: number;
   categories: string[];
   series: Series[];
   format?: (v: number) => string;
@@ -283,11 +306,12 @@ export function LineChart({
   events?: ChartEvent[];
   endLabels?: boolean;
 }) {
-  const PAD = { l: 52, r: endLabels ? 104 : 14, t: 24, b: 28 };
+  const narrow = vw < 400;
+  const PAD = { l: narrow ? 46 : 52, r: endLabels ? (narrow ? 100 : 104) : 14, t: 24, b: 28 };
   const all = series.flatMap((s) => s.values);
   const { min, max, ticks } = scale(all);
-  const iw = W - PAD.l - PAD.r;
-  const ih = H - PAD.t - PAD.b;
+  const iw = vw - PAD.l - PAD.r;
+  const ih = vh - PAD.t - PAD.b;
   const y = (v: number) => PAD.t + ih - ((v - min) / (max - min)) * ih;
   const slot = iw / categories.length;
   const x = (i: number) => PAD.l + slot * i + slot / 2;
@@ -307,10 +331,10 @@ export function LineChart({
 
   return (
     <div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img">
+      <svg viewBox={`0 0 ${vw} ${vh}`} className="w-full" role="img">
         {ticks.map((t) => (
           <g key={t}>
-            <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} strokeWidth="1" style={{ stroke: t === 0 ? C.gray : C.graySoft }} />
+            <line x1={PAD.l} x2={vw - PAD.r} y1={y(t)} y2={y(t)} strokeWidth="1" style={{ stroke: t === 0 ? C.gray : C.graySoft }} />
             <text x={PAD.l - 6} y={y(t) + 4} textAnchor="end" className="fill-muted" fontSize="11">
               {format(t)}
             </text>
@@ -337,19 +361,30 @@ export function LineChart({
             </g>
           );
         })}
-        {trend && <TrendLines series={series} x={x} y={y} top={PAD.t} bottom={H - PAD.b} />}
-        <Events events={events} categories={categories} x={x} bottom={H - PAD.b} right={W - PAD.r + 60} />
+        {trend && <TrendLines series={series} x={x} y={y} top={PAD.t} bottom={vh - PAD.b} />}
+        <Events events={events} categories={categories} x={x} bottom={vh - PAD.b} right={vw - PAD.r + 60} compact={vw < 400} />
         {endLabels &&
           ends.map((e) => (
             <text key={e.s.name} x={x(e.idx) + 8} y={e.ly + 4} fontSize="11" fontWeight="600" style={{ fill: e.s.color }}>
               {e.s.name} {format(e.v)}
             </text>
           ))}
-        <XLabels categories={categories} x={x} />
+        <XLabels categories={categories} x={x} vh={vh} />
       </svg>
       {!endLabels && series.length > 1 && <Legend series={series} trend={trend} />}
     </div>
   );
+}
+
+type BarProps = Omit<Parameters<typeof BarChartAt>[0], "vw" | "vh">;
+type LineProps = Omit<Parameters<typeof LineChartAt>[0], "vw" | "vh">;
+
+export function BarChart(props: BarProps) {
+  return <Dual render={(w, h) => <BarChartAt {...props} vw={w} vh={h} />} />;
+}
+
+export function LineChart(props: LineProps) {
+  return <Dual render={(w, h) => <LineChartAt {...props} vw={w} vh={h} />} />;
 }
 
 export type Bubble = {

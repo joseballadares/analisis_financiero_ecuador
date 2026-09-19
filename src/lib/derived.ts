@@ -88,7 +88,8 @@ export function derivedRatios(m: Metrics): Record<string, number | null> {
     end_activo: posAct && ok(pat) ? (act! - pat) / act! : null,
     impac_gasto_a_v: !partial && ok(m.gastos_admin_ventas) && posVen ? m.gastos_admin_ventas / ven! : null,
     impac_carga_finan: !partial && ok(m.gastos_financieros) && posVen ? m.gastos_financieros / ven! : null,
-    per_med_cobranza: ok(m.rot_cartera) && m.rot_cartera > 0 ? 365 / m.rot_cartera : null,
+    // Más de 2 años de cobranza (rotación casi cero) es un dato no significativo, no un plazo real.
+    per_med_cobranza: ok(m.rot_cartera) && m.rot_cartera > 0.5 ? 365 / m.rot_cartera : null,
     per_med_pago: null,
     margen_operacional: ok(uo) && posVen ? uo / ven! : null,
     rent_ope_patrimonio: ok(uo) && posPat ? uo / pat! : null,
