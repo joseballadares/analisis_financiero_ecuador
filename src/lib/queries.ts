@@ -7,6 +7,32 @@ const VEN_C = VEN.replace(/metrics/g, "c.metrics");
 // Caché en memoria para agregaciones pesadas: los datos solo cambian con una nueva carga.
 const MEMO_TTL_MS = 6 * 60 * 60 * 1000;
 const memoStore = new Map<string, { at: number; value: Promise<unknown> }>();
+const KV_VERSION = 1; // subir al cambiar la lógica de una agregación guardada
+
+// Como memo, pero además guarda el resultado en la base (kv_cache): las instancias nuevas del servidor lo leen en
+// milisegundos en vez de repetir agregaciones de decenas de segundos.
+export function persisted<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  return memo(`kv:${key}`, async () => {
+    const database = db();
+    try {
+      const rows = await database.sql<{ data: T }>`SELECT data FROM kv_cache WHERE key = ${key} AND version = ${KV_VERSION}`;
+      if (rows[0]) return rows[0].data;
+    } catch {
+      // la tabla aún no existe: se calcula sin guardar
+    }
+    const value = await fn();
+    try {
+      await database.sql`
+        INSERT INTO kv_cache (key, version, data) VALUES (${key}, ${KV_VERSION}, ${JSON.stringify(value)}::jsonb)
+        ON CONFLICT (key) DO UPDATE SET version = EXCLUDED.version, data = EXCLUDED.data, computed_at = now()
+      `;
+    } catch {
+      // sin persistencia: queda en memoria
+    }
+    return value;
+  });
+}
+
 export function memoForget(key: string): void {
   memoStore.delete(key);
 }
@@ -125,7 +151,7 @@ async function getProvinceStatsRaw(anio: number): Promise<ProvinceStat[]> {
 }
 
 export function getProvinceStats(anio: number): Promise<ProvinceStat[]> {
-  return memo(`prov:${anio}`, () => getProvinceStatsRaw(anio));
+  return persisted(`prov:${anio}`, () => getProvinceStatsRaw(anio));
 }
 
 export type SectorYearStat = {
@@ -161,7 +187,7 @@ async function getSectorOverviewRaw(anio: number): Promise<SectorYearStat[]> {
 }
 
 export function getSectorOverview(anio: number): Promise<SectorYearStat[]> {
-  return memo(`ov:${anio}`, () => getSectorOverviewRaw(anio));
+  return persisted(`ov:${anio}`, () => getSectorOverviewRaw(anio));
 }
 
 export type SectorSeriesRow = {
@@ -310,7 +336,7 @@ export async function getCatalogNames(catalogIds: number[]): Promise<Record<numb
 
 // Número de empresas con posición en el ranking nacional, por año (para "puesto X de N").
 export function getRankingUniverse(): Promise<Record<number, number>> {
-  return memo("universe", async () => {
+  return persisted("universe", async () => {
     const database = db();
     const rows = await database.sql<{ anio: number; n: number }>`
       SELECT anio, count(*)::int AS n FROM company_year_financials
@@ -346,7 +372,7 @@ export type HomeCompany = {
 // Las 500 empresas con más ingresos del año (base de las tarjetas aleatorias, la cinta y el top 10).
 // Las empresas con más ingresos operacionales del año (por defecto las 500 de la página principal).
 export function getTopHome(anio: number, limit = 500): Promise<HomeCompany[]> {
-  return memo(`home:${anio}:${limit}`, async () => {
+  return persisted(`home:${anio}:${limit}`, async () => {
     const database = db();
     // Orden por ingresos operacionales (los mismos que se muestran); la posición de la SCVS usa otra base.
     const rows = await database.sql<{
