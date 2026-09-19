@@ -5,7 +5,7 @@ import FeaturedCard from "@/components/home/FeaturedCard";
 import ShuffleButton from "@/components/home/ShuffleButton";
 import { getLatestRankingYear, getTopLevelSectors } from "@/lib/db";
 import { getProvinceStats, getSectorOverview, getTopHome, type HomeCompany } from "@/lib/queries";
-import { getInteresting, pickFeatured } from "@/lib/interesting";
+import { peekInteresting, pickFeatured } from "@/lib/interesting";
 import { formatCompactMoney, formatPercent, sentenceCase } from "@/lib/format";
 import { CURRENT_VERSION } from "@/lib/versions";
 
@@ -28,8 +28,8 @@ export default async function Home() {
     getProvinceStats(anio),
     getSectorOverview(anio),
     getTopLevelSectors(),
-    // Si el cálculo tarda (primera visita tras un despliegue), la portada no espera: usa una muestra del top 500.
-    Promise.race([getInteresting(anio).catch(() => null), new Promise<null>((r) => setTimeout(() => r(null), 3500))]),
+    // Solo lee el resultado guardado del Radar (nunca lo calcula aquí); sin él, usa una muestra del top 500.
+    peekInteresting(anio).catch(() => null),
   ]);
 
   const tot = (year: number) => {

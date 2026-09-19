@@ -1,7 +1,7 @@
 import { db, VEN, type Metrics } from "@/lib/db";
 import { derivedRatios, isInactive, needsBalanceFill } from "@/lib/derived";
 import { advancedRatios } from "@/lib/star";
-import { memo } from "@/lib/queries";
+import { memo, memoForget } from "@/lib/queries";
 import { formatNumber, formatPercent } from "@/lib/format";
 import { SIGNALS, type Interesting, type InterestingPool, type Signal, type SignalId } from "@/lib/interestingMeta";
 
@@ -224,8 +224,42 @@ async function compute(anio: number): Promise<InterestingPool> {
   return { anio, desde, evaluadas: byRevenue.length, elegibles: eligible.length, excluidas, porSenal, empresas };
 }
 
+// Versión del algoritmo: al cambiar reglas o umbrales se sube y el resultado guardado se recalcula.
+const ALGO_VERSION = 1;
+
+async function readCache(anio: number): Promise<InterestingPool | null> {
+  try {
+    const rows = await db().sql<{ data: InterestingPool }>`SELECT data FROM radar_cache WHERE anio = ${anio} AND version = ${ALGO_VERSION}`;
+    return rows[0]?.data ?? null;
+  } catch {
+    return null; // tabla aún no creada
+  }
+}
+
+// Lectura rápida (portada): solo devuelve el resultado guardado; nunca lo calcula.
+export function peekInteresting(anio: number): Promise<InterestingPool | null> {
+  return memo(`interesting-peek:${anio}`, () => readCache(anio)).then((v) => {
+    if (v === null) memoForget(`interesting-peek:${anio}`);
+    return v;
+  });
+}
+
+// Lectura o cálculo (página del Radar): si no hay resultado guardado lo calcula (~15 s) y lo guarda.
 export function getInteresting(anio: number): Promise<InterestingPool> {
-  return memo(`interesting:${anio}`, () => compute(anio));
+  return memo(`interesting:${anio}`, async () => {
+    const cached = await readCache(anio);
+    if (cached) return cached;
+    const pool = await compute(anio);
+    try {
+      await db().sql`
+        INSERT INTO radar_cache (anio, version, data) VALUES (${anio}, ${ALGO_VERSION}, ${JSON.stringify(pool)}::jsonb)
+        ON CONFLICT (anio) DO UPDATE SET version = EXCLUDED.version, data = EXCLUDED.data, computed_at = now()
+      `;
+    } catch {
+      // sin caché persistente: el resultado sigue disponible en memoria
+    }
+    return pool;
+  });
 }
 
 // Ocho tarjetas para la portada: al menos una por señal, máximo 2 por sector y al menos 2 empresas fuera de las 500 mayores.

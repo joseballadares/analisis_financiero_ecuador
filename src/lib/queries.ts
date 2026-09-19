@@ -7,6 +7,10 @@ const VEN_C = VEN.replace(/metrics/g, "c.metrics");
 // Caché en memoria para agregaciones pesadas: los datos solo cambian con una nueva carga.
 const MEMO_TTL_MS = 6 * 60 * 60 * 1000;
 const memoStore = new Map<string, { at: number; value: Promise<unknown> }>();
+export function memoForget(key: string): void {
+  memoStore.delete(key);
+}
+
 export function memo<T>(key: string, fn: () => Promise<T>): Promise<T> {
   const hit = memoStore.get(key);
   if (hit && Date.now() - hit.at < MEMO_TTL_MS) return hit.value as Promise<T>;
