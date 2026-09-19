@@ -39,7 +39,7 @@ function Tile({ label, value, chip, note, tone, title }: { label: string; value:
   return (
     <div className="min-w-0 rounded-xl border p-3" style={{ background: t.bg, borderColor: t.border }} title={title}>
       <div className="flex items-center justify-between gap-1">
-        <span className="truncate text-[10.5px] font-semibold uppercase tracking-wider" style={{ color: t.text }}>
+        <span className="text-[10.5px] font-semibold uppercase leading-tight tracking-wider" style={{ color: t.text }}>
           {label}
         </span>
         {chip && (

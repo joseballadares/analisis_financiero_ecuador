@@ -112,7 +112,7 @@ export function creditScore(params: {
     regla: "Utilidad neta ÷ activos: 8% o más = 100; 4% = 80; 1% = 60; 0% = 35; pérdida = 10.",
   });
 
-  const last3 = history.slice(-3).filter((h) => h.utilidad !== null);
+  const last3 = [...history].sort((a, b) => a.anio - b.anio).slice(-3).filter((h) => h.utilidad !== null);
   const pos = last3.filter((h) => (h.utilidad as number) > 0).length;
   add({
     id: "consistencia",

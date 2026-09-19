@@ -133,7 +133,7 @@ export default function ResumenTab({
       <VerticalEquations year={currentYear} a={amounts} />
 
       {trend.length >= 2 && (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid items-start gap-4 lg:grid-cols-2">
           <Card title={ivuTitle} sub="Ingresos y utilidad neta por año (pasa el cursor sobre cada año para ver los valores)">
             <BarChart
               categories={cats}
