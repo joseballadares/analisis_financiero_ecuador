@@ -10,7 +10,7 @@ import { SIGNALS, type Interesting, type InterestingPool, type Signal, type Sign
 
 const VEN_F = VEN.replace(/metrics/g, "f.metrics");
 const POOL = 2000;
-const CANDIDATES = 3000;
+const CANDIDATES = 4500;
 const TOP_SHARE = 0.9; // cada señal exige estar en el 10 % superior de las empresas elegibles
 
 export { SIGNALS } from "@/lib/interestingMeta";
@@ -90,19 +90,35 @@ async function compute(anio: number): Promise<InterestingPool> {
   const revRank = new Map<number, number>(byRevenue.map((c, i) => [c.expediente, i + 1]));
 
   // Controles de calidad: datos completos y comparables en los 5 años.
+  const excluidas = { sinCincoAnios: 0, sinNiif: 0, patrimonio: 0, inactivaOParcial: 0, holding: 0 };
   const eligible: Co[] = [];
   for (const c of byRevenue) {
-    const m = c.years.get(anio);
-    if (!m) continue;
+    const m = c.years.get(anio) as Metrics;
     let full = true;
     for (let y = desde; y <= anio; y++) {
       const my = c.years.get(y);
       if (!my || !(ing(my) > 0)) full = false;
     }
-    if (!full || !hasNiif.has(c.expediente)) continue;
-    if (!ok(m.activos) || m.activos <= 0 || !ok(m.patrimonio) || m.patrimonio <= 0 || m.patrimonio / m.activos < 0.1) continue;
-    if (isInactive(m) || needsBalanceFill(m) || m.sin_detalle_operacional === 1) continue;
-    if (c.ciiu6?.startsWith("K642")) continue; // holdings: sus ratios no son comparables
+    if (!full) {
+      excluidas.sinCincoAnios++;
+      continue;
+    }
+    if (!hasNiif.has(c.expediente)) {
+      excluidas.sinNiif++;
+      continue;
+    }
+    if (!ok(m.activos) || m.activos <= 0 || !ok(m.patrimonio) || m.patrimonio <= 0 || m.patrimonio / m.activos < 0.1) {
+      excluidas.patrimonio++;
+      continue;
+    }
+    if (isInactive(m) || needsBalanceFill(m) || m.sin_detalle_operacional === 1) {
+      excluidas.inactivaOParcial++;
+      continue;
+    }
+    if (c.ciiu6?.startsWith("K642")) {
+      excluidas.holding++; // holdings: sus ratios no son comparables
+      continue;
+    }
     eligible.push(c);
   }
 
@@ -216,7 +232,7 @@ async function compute(anio: number): Promise<InterestingPool> {
     });
   }
   empresas.sort((a, b) => b.signals.length - a.signals.length || a.rank - b.rank);
-  return { anio, desde, evaluadas: byRevenue.length, elegibles: eligible.length, porSenal, empresas };
+  return { anio, desde, evaluadas: byRevenue.length, elegibles: eligible.length, excluidas, porSenal, empresas };
 }
 
 export function getInteresting(anio: number): Promise<InterestingPool> {

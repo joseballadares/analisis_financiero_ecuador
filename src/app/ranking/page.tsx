@@ -57,6 +57,12 @@ export default async function RankingPage({
           <Stat label="Pasan los controles de calidad" value={pool.elegibles.toLocaleString("es-EC")} note="datos completos en los 5 años, balance NIIF y patrimonio positivo" />
           <Stat label="Con al menos una señal" value={pool.empresas.length.toLocaleString("es-EC")} note="10 % superior en alguna de las seis señales" />
         </div>
+        <p className="mt-3 text-xs text-muted">
+          Excluidas por los controles: {pool.excluidas.sinCincoAnios.toLocaleString("es-EC")} sin ingresos en los 5 años,{" "}
+          {pool.excluidas.sinNiif.toLocaleString("es-EC")} sin balance NIIF, {pool.excluidas.patrimonio.toLocaleString("es-EC")} con patrimonio
+          negativo o menor a 10 % del activo, {pool.excluidas.inactivaOParcial.toLocaleString("es-EC")} inactivas o con datos parciales y{" "}
+          {pool.excluidas.holding.toLocaleString("es-EC")} holdings.
+        </p>
         <div className="mt-6">
           <InterestingTable rows={pool.empresas} sectors={names} counts={pool.porSenal} />
         </div>
