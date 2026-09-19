@@ -27,7 +27,7 @@ export default function FeaturedCard({ c, sector, year }: { c: HomeCompany; sect
       </div>
       <h3 className="mt-3 break-words text-sm font-semibold leading-snug group-hover:text-brand">{c.nombre}</h3>
       <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border pt-3">
-        <Metric label={`Ingresos ${year}`} value={formatCompactMoney(c.ingresos)} />
+        <Metric label="Ingresos" value={formatCompactMoney(c.ingresos)} />
         <Metric label="Margen neto" value={c.margen === null ? "—" : formatPercent(c.margen, 1)} tone={tone(c.margen)} />
         <Metric label="ROE" value={c.roe === null ? "—" : formatPercent(c.roe, 1)} tone={tone(c.roe)} />
       </div>
