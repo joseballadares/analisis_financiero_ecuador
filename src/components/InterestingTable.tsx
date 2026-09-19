@@ -10,7 +10,7 @@ import SortIcon from "@/components/SortIcon";
 type SortKey = "senales" | "rank" | "nombre" | "ingresos" | "margen" | "roe";
 const PAGE = 40;
 
-// Lista de empresas interesantes: se puede acotar por señal y ordenar con las flechas; cada fila explica por qué aparece.
+// Lista del Radar Estratégico: se puede acotar por señal y ordenar con las flechas; cada fila explica por qué aparece.
 export default function InterestingTable({
   rows,
   sectors,
@@ -99,7 +99,7 @@ export default function InterestingTable({
               </th>
               <th className={th}>
                 <span className={sortable} onClick={() => setSortKey("senales")}>
-                  Por qué es interesante <SortIcon dir={dirOf("senales")} />
+                  Por qué está en el radar <SortIcon dir={dirOf("senales")} />
                 </span>
               </th>
               <th className={`${th} text-right`}>

@@ -22,7 +22,7 @@ export default async function RankingPage({
   searchParams: Promise<{ anio?: string; vista?: string }>;
 }) {
   const { anio: anioParam, vista } = await searchParams;
-  const interesantes = vista === "interesantes";
+  const interesantes = vista === "radar" || vista === "interesantes";
   const latestYear = await getLatestRankingYear();
   const parsed = anioParam ? parseInt(anioParam, 10) : latestYear;
   const anio = interesantes ? latestYear : Number.isFinite(parsed) ? parsed : latestYear;
@@ -35,8 +35,8 @@ export default async function RankingPage({
       <Link href="/ranking" className={tab(!interesantes)}>
         Por ingresos
       </Link>
-      <Link href="/ranking?vista=interesantes" className={tab(interesantes)}>
-        Empresas interesantes
+      <Link href="/ranking?vista=radar" className={tab(interesantes)}>
+        Radar Estratégico
       </Link>
     </div>
   );
@@ -47,7 +47,9 @@ export default async function RankingPage({
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10">
         <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Ranking de empresas</h1>
         <div className="mt-4">{header}</div>
-        <p className="mt-5 max-w-3xl text-muted">
+        <h2 className="mt-6 text-xl font-semibold tracking-tight">Radar Estratégico</h2>
+        <p className="mt-0.5 text-sm font-medium text-brand">Un Watchlist de Empresas con Alto Desempeño</p>
+        <p className="mt-3 max-w-3xl text-muted">
           Empresas que vale la pena leer y seguir en el tiempo, elegidas con reglas automáticas sobre la ventana {pool.desde}–
           {pool.anio}. Cada una aparece por una o más señales; toca una señal para ver solo esas empresas y usa las flechas
           para ordenar. No es una recomendación de inversión.

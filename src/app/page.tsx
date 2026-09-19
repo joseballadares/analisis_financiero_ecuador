@@ -51,7 +51,7 @@ export default async function Home() {
     .slice(0, 6);
 
   const top10 = top.slice(0, 10);
-  // Empresas interesantes (señales sobre 5 años); si no hay suficientes, una muestra del top 500.
+  // Radar Estratégico (señales sobre 5 años); si no hay suficientes, una muestra del top 500.
   const featured =
     pool && pool.empresas.length >= 8 ? pickFeatured(pool, 8) : sample(top, 8).map((c) => ({ ...c, signals: undefined }));
   const tickerItems = sample(top, 24);
@@ -151,7 +151,8 @@ export default async function Home() {
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight">Empresas interesantes</h2>
+            <h2 className="text-2xl font-semibold tracking-tight">Radar Estratégico</h2>
+            <p className="mt-0.5 text-sm font-medium text-brand">Un Watchlist de Empresas con Alto Desempeño</p>
             <p className="mt-1 max-w-2xl text-sm text-muted">
               Historias para leer y seguir en el tiempo: empresas que destacan por crecer, rendir, mejorar o cambiar en los últimos
               5 años. Selección editorial automatizada, no una recomendación de inversión.
@@ -159,7 +160,7 @@ export default async function Home() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <ShuffleButton />
-            <Link href="/ranking?vista=interesantes" className="text-sm text-brand hover:underline">
+            <Link href="/ranking?vista=radar" className="text-sm text-brand hover:underline">
               Ver la lista completa →
             </Link>
           </div>

@@ -4,6 +4,14 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const RELEASES: Release[] = [
   {
+    version: "0.16",
+    date: "2026-09-18",
+    title: "Radar Estratégico",
+    changes: [
+      "Las empresas interesantes pasan a llamarse Radar Estratégico: un watchlist de empresas con alto desempeño, en la portada y en la pestaña del ranking.",
+    ],
+  },
+  {
     version: "0.15",
     date: "2026-09-18",
     title: "Empresas interesantes",

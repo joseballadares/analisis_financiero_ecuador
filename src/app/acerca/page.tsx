@@ -116,9 +116,9 @@ export default function AcercaPage() {
         </ul>
       </Section>
 
-      <Section title="Cómo se eligen las empresas interesantes">
+      <Section title="Cómo se arma el Radar Estratégico">
         <p>
-          La portada y la pestaña <Link href="/ranking?vista=interesantes" className="text-brand hover:underline">Empresas interesantes</Link>{" "}
+          La portada y la pestaña <Link href="/ranking?vista=radar" className="text-brand hover:underline">Radar Estratégico</Link>{" "}
           del ranking son una <strong>selección editorial automatizada</strong> para leer sobre empresas y ver su evolución. No es una
           recomendación de inversión y tiene sesgos que declaramos abajo.
         </p>

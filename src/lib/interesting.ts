@@ -5,7 +5,7 @@ import { memo } from "@/lib/queries";
 import { formatNumber, formatPercent } from "@/lib/format";
 import { SIGNALS, type Interesting, type InterestingPool, type Signal, type SignalId } from "@/lib/interestingMeta";
 
-// Empresas interesantes: una selección editorial automatizada para leer sobre ellas y ver su evolución.
+// Radar Estratégico (watchlist de empresas con alto desempeño): una selección editorial automatizada para leer sobre ellas y ver su evolución.
 // No es una recomendación de inversión. Ventana de 5 años (anio-4 … anio). Reglas en /acerca.
 
 const VEN_F = VEN.replace(/metrics/g, "f.metrics");

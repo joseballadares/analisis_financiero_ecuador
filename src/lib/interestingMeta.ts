@@ -1,4 +1,4 @@
-// Tipos y descripciones de las señales de "empresas interesantes" (sin dependencias del servidor).
+// Tipos y descripciones de las señales del Radar Estratégico (sin dependencias del servidor).
 export type SignalId = "roe" | "ebitda" | "mejora" | "crecimiento" | "escalada" | "giro";
 export type Signal = { id: SignalId; label: string; detail: string; tone: "up" | "down" };
 
