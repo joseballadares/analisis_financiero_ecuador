@@ -343,28 +343,28 @@ export type HomeCompany = {
 export function getTopHome(anio: number): Promise<HomeCompany[]> {
   return memo(`home:${anio}`, async () => {
     const database = db();
+    // Orden por ingresos operacionales (los mismos que se muestran); la posición de la SCVS usa otra base.
     const rows = await database.sql<{
       ruc: string | null;
       nombre: string;
-      posicion_general: number;
       ciiu_n1: string | null;
       metrics: Record<string, number | null>;
     }>`
-      SELECT c.ruc, c.nombre, f.posicion_general, f.ciiu_n1, f.metrics
+      SELECT c.ruc, c.nombre, f.ciiu_n1, f.metrics
       FROM company_year_financials f
       JOIN companies c ON c.expediente = f.expediente
-      WHERE f.anio = ${anio} AND f.posicion_general IS NOT NULL AND c.ruc IS NOT NULL
-      ORDER BY f.posicion_general ASC
+      WHERE f.anio = ${anio} AND c.ruc IS NOT NULL AND ${database.sql.raw(VEN_F)} > 0
+      ORDER BY ${database.sql.raw(VEN_F)} DESC
       LIMIT 500
     `;
     return rows
-      .map((r) => {
+      .map((r, i) => {
         const d = derivedRatios(r.metrics);
         const ing = (r.metrics.ingresos_ventas ?? 0) > 0 ? (r.metrics.ingresos_ventas as number) : (r.metrics.ingresos_totales ?? 0);
         return {
           ruc: r.ruc as string,
           nombre: r.nombre,
-          rank: r.posicion_general,
+          rank: i + 1,
           sector: r.ciiu_n1,
           ingresos: ing,
           activos: r.metrics.activos ?? null,
