@@ -150,10 +150,10 @@ export default function StatementsView({
                           <td key={y} className="px-2 py-1.5 text-right tabular-nums whitespace-nowrap">
                             {v === undefined ? "—" : formatMoney(v)}
                             {pct && v !== undefined && base ? (
-                              <div className="text-[10px] font-normal text-muted">{formatPercent(v / base, 1)}</div>
+                              <div className="text-[11px] font-normal text-muted">{formatPercent(v / base, 1)}</div>
                             ) : null}
                             {delta && v !== undefined && p ? (
-                              <div className={`text-[10px] font-normal ${v - p >= 0 ? "text-positive" : "text-negative"}`}>
+                              <div className={`text-[11px] font-normal ${v - p >= 0 ? "text-positive" : "text-negative"}`}>
                                 {v - p >= 0 ? "▲" : "▼"} {formatPercent(Math.abs((v - p) / Math.abs(p)), 1)}
                               </div>
                             ) : null}

@@ -67,7 +67,7 @@ export default function RatiosCards({
                       <span className="text-[13px] font-medium leading-tight">{info.nombre}</span>
                       {flag && (
                         <span
-                          className="shrink-0 rounded border border-border px-1 text-[9px] uppercase tracking-wide text-muted"
+                          className="shrink-0 rounded border border-border px-1 text-[11px] uppercase tracking-wide text-muted"
                           title={FLAG_HELP[flag]}
                         >
                           {flag === "aprox_bajo" ? "⚠ " : ""}

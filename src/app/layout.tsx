@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { CURRENT_VERSION } from "@/lib/versions";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -61,7 +62,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Link href="/acerca" className="underline hover:text-foreground">
               Metodología y fuentes
             </Link>
-            .
+            .{" "}
+            <Link href="/versiones" className="underline hover:text-foreground">
+              v{CURRENT_VERSION.version}
+            </Link>
           </div>
         </footer>
       </body>

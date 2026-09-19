@@ -39,17 +39,17 @@ function Tile({ label, value, chip, note, tone, title }: { label: string; value:
   return (
     <div className="min-w-0 rounded-xl border p-3" style={{ background: t.bg, borderColor: t.border }} title={title}>
       <div className="flex items-center justify-between gap-1">
-        <span className="text-[10.5px] font-semibold uppercase leading-tight tracking-wider" style={{ color: t.text }}>
+        <span className="text-[11.5px] font-semibold uppercase leading-tight tracking-wider" style={{ color: t.text }}>
           {label}
         </span>
         {chip && (
-          <span className="shrink-0 rounded-full px-1.5 py-0.5 text-[10.5px] font-semibold tabular-nums" style={{ background: t.border, color: "var(--surface)" }}>
+          <span className="shrink-0 rounded-full px-1.5 py-0.5 text-[11.5px] font-semibold tabular-nums" style={{ background: t.border, color: "var(--surface)" }}>
             {chip}
           </span>
         )}
       </div>
       <div className="mt-1 truncate text-base font-semibold tabular-nums sm:text-lg">{value}</div>
-      {note && <div className="mt-0.5 text-[10.5px] leading-snug text-muted">{note}</div>}
+      {note && <div className="mt-0.5 text-[11.5px] leading-snug text-muted">{note}</div>}
     </div>
   );
 }
@@ -123,19 +123,36 @@ type Block = { label: string; value: number | null; share: number | null; tone: 
 
 function StackBlock({ b, grow, height }: { b: Block; grow?: number; height?: string }) {
   const t = TONE[b.tone];
+  // Bloques pequeños (poco peso): una sola línea con nombre, valor y porcentaje para que nada quede tapado.
+  if (grow !== undefined && b.share !== null && Math.abs(b.share) < 0.2) {
+    return (
+      <div
+        className="flex min-h-11 min-w-0 flex-wrap items-center justify-between gap-x-2 rounded-lg border px-3 py-1.5"
+        style={{ background: t.bg, borderColor: t.border, flex: `${grow} 1 0%` }}
+        title={b.note}
+      >
+        <span className="text-[11.5px] font-semibold uppercase tracking-wider" style={{ color: t.text }}>
+          {b.label}
+        </span>
+        <span className="text-sm font-semibold tabular-nums">
+          {formatMoney(b.value)} <span className="text-xs font-normal text-muted">· {formatPercent(b.share, 1)}</span>
+        </span>
+      </div>
+    );
+  }
   return (
     <div
       className="flex min-h-14 min-w-0 flex-col justify-center rounded-lg border px-3 py-2"
       style={{ background: t.bg, borderColor: t.border, flex: grow !== undefined ? `${grow} 1 0%` : undefined, height }}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[10.5px] font-semibold uppercase tracking-wider" style={{ color: t.text }}>
+        <span className="text-[11.5px] font-semibold uppercase tracking-wider" style={{ color: t.text }}>
           {b.label}
         </span>
         {b.share !== null && <span className="text-xs font-semibold tabular-nums">{formatPercent(b.share, 1)}</span>}
       </div>
       <div className="mt-0.5 truncate text-sm font-semibold tabular-nums">{formatMoney(b.value)}</div>
-      {b.note && <div className="text-[10.5px] leading-snug text-muted">{b.note}</div>}
+      {b.note && <div className="text-[11.5px] leading-snug text-muted">{b.note}</div>}
     </div>
   );
 }

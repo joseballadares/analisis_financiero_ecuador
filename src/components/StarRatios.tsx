@@ -114,7 +114,7 @@ export default function StarRatios({
                   <div className="text-sm font-medium leading-snug">{info.nombre}</div>
                   {flag && (
                     <span
-                      className="shrink-0 rounded border border-border px-1 text-[10px] uppercase tracking-wide text-muted"
+                      className="shrink-0 rounded border border-border px-1 text-[11px] uppercase tracking-wide text-muted"
                       title={FLAG_HELP[flag]}
                     >
                       {flag === "aprox_bajo" ? "⚠ " : ""}
@@ -261,7 +261,7 @@ function DuPontNode({
           </span>
           <Sparkline values={seriesOf(node.key)} width={44} height={20} title={node.nombre} />
         </div>
-        <div className="mt-1 text-[10px] leading-snug text-muted">= {node.formula}</div>
+        <div className="mt-1 text-[11px] leading-snug text-muted">= {node.formula}</div>
       </div>
       {hasChildren && (
         <ul>
@@ -317,7 +317,7 @@ function CycleFormula({
           <Sparkline values={seriesOf(key)} width={48} height={20} tone={trendTone(seriesOf(key), info.direction)} title={info.nombre} />
         </div>
         <div className="mt-1 flex items-center justify-between gap-1">
-          <span className="text-[10.5px] leading-snug text-muted">{help}</span>
+          <span className="text-[11.5px] leading-snug text-muted">{help}</span>
           <Semaforo ratioKey={key} dist={dist[key]} dir={info.direction} width={56} />
         </div>
       </div>

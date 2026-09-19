@@ -22,8 +22,8 @@ export const EVENTS: ChartEvent[] = [
   { year: 2024, label: "Crisis energética" },
 ];
 
-const W = 640;
-const H = 250;
+const W = 480;
+const H = 230;
 const isNum = (v: number | null | undefined): v is number => typeof v === "number" && Number.isFinite(v);
 
 function niceStep(range: number, ticks: number) {
@@ -123,7 +123,7 @@ function Events({
         return (
           <g key={e.year}>
             <line x1={cx} x2={cx} y1={16} y2={bottom} strokeWidth="1.25" strokeDasharray="5 4" style={{ stroke: C.red, opacity: 0.85 }} />
-            <text x={tx} y={11} textAnchor={anchor} fontSize="10" style={{ fill: C.red }}>
+            <text x={tx} y={11} textAnchor={anchor} fontSize="11" style={{ fill: C.red }}>
               {e.year} {e.label}
             </text>
           </g>
@@ -208,7 +208,7 @@ export function BarChart({
         {ticks.map((t) => (
           <g key={t}>
             <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} strokeWidth="1" style={{ stroke: C.graySoft }} />
-            <text x={PAD.l - 6} y={y(t) + 4} textAnchor="end" className="fill-muted" fontSize="10.5">
+            <text x={PAD.l - 6} y={y(t) + 4} textAnchor="end" className="fill-muted" fontSize="11">
               {format(t)}
             </text>
           </g>
@@ -244,7 +244,7 @@ export function BarChart({
             const bx = x(last) - (bw * series.length) / 2 + bw * si + (bw - 1) / 2;
             const yy = v >= 0 ? y(v) - 5 : y(v) + 13;
             return (
-              <text key={s.name} x={bx} y={yy} textAnchor="middle" fontSize="10.5" fontWeight="600" style={{ fill: s.color }}>
+              <text key={s.name} x={bx} y={yy} textAnchor="middle" fontSize="11" fontWeight="600" style={{ fill: s.color }}>
                 {format(v)}
               </text>
             );
@@ -280,7 +280,7 @@ export function LineChart({
   events?: ChartEvent[];
   endLabels?: boolean;
 }) {
-  const PAD = { l: 52, r: endLabels ? 128 : 14, t: 24, b: 28 };
+  const PAD = { l: 52, r: endLabels ? 104 : 14, t: 24, b: 28 };
   const all = series.flatMap((s) => s.values);
   const { min, max, ticks } = scale(all);
   const iw = W - PAD.l - PAD.r;
@@ -308,7 +308,7 @@ export function LineChart({
         {ticks.map((t) => (
           <g key={t}>
             <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} strokeWidth="1" style={{ stroke: t === 0 ? C.gray : C.graySoft }} />
-            <text x={PAD.l - 6} y={y(t) + 4} textAnchor="end" className="fill-muted" fontSize="10.5">
+            <text x={PAD.l - 6} y={y(t) + 4} textAnchor="end" className="fill-muted" fontSize="11">
               {format(t)}
             </text>
           </g>

@@ -75,13 +75,13 @@ export default function RatiosTable({
                         <div className="flex items-center gap-2">
                           <span>{info.nombre}</span>
                           {flag && (
-                            <span className="rounded border border-border px-1 text-[10px] uppercase tracking-wide text-muted" title={FLAG_HELP[flag]}>
+                            <span className="rounded border border-border px-1 text-[11px] uppercase tracking-wide text-muted" title={FLAG_HELP[flag]}>
                               {flag === "aprox_bajo" ? "⚠ " : ""}
                               {FLAG_LABEL[flag]}
                             </span>
                           )}
                         </div>
-                        <div className="text-[10px] leading-tight text-muted">{info.formula}</div>
+                        <div className="text-[11px] leading-tight text-muted">{info.formula}</div>
                       </td>
                       {years.map((y, i) => (
                         <td
