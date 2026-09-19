@@ -244,8 +244,8 @@ function StatementTable({ c, kind, max }: { c: Ctx; kind: "esf" | "eri"; max: nu
         const old = prev ? byYear.get(prev)?.[code] : undefined;
         const varp = isNum(cur as number) && isNum(old as number) && (old as number) > 0 ? (cur as number) / (old as number) - 1 : null;
         return (
-          <View key={code} wrap={false} style={{ flexDirection: "row", paddingVertical: 2.2, borderBottomWidth: 0.4, borderBottomColor: COLOR.graySoft, borderTopWidth: code.length === 1 ? 0.75 : 0, borderTopColor: COLOR.gray }}>
-            <T style={{ width: labelW, paddingLeft: 4 + depth * 7, fontSize: 7, fontFamily: bold ? FONT.sansBold : FONT.sans }}>{c.b.names[code] ?? code}</T>
+          <View key={code} wrap={false} style={{ flexDirection: "row", paddingVertical: 2, borderBottomWidth: 0.4, borderBottomColor: COLOR.graySoft, borderTopWidth: code.length === 1 ? 0.75 : 0, borderTopColor: COLOR.gray }}>
+            <T maxLines={1} style={{ width: labelW, paddingLeft: 4 + depth * 7, paddingRight: 3, fontSize: 7, fontFamily: bold ? FONT.sansBold : FONT.sans }}>{c.b.names[code] ?? code}</T>
             {years.map((y) => (
               <T key={y} style={{ width: colW, textAlign: "right", fontSize: 7, paddingRight: 3, fontFamily: bold ? FONT.sansBold : FONT.sans }}>
                 {accounting(byYear.get(y)?.[code])}
@@ -297,7 +297,7 @@ export function EsfPage({ c }: { c: Ctx }) {
   return (
     <Sheet c={c} kicker="1 · Estados financieros" title="Estado de situación financiera" lead={N.statementLead(c, "esf")}>
       <Fig n="Tabla 1" title={`Estado de situación financiera comparativo, ${c.years[0]}–${c.year}`}>
-        {has ? <StatementTable c={c} kind="esf" max={44} /> : <SummaryTable c={c} />}
+        {has ? <StatementTable c={c} kind="esf" max={40} /> : <SummaryTable c={c} />}
       </Fig>
       <Note>
         {`Cifras en dólares de los Estados Unidos; entre paréntesis, importes negativos. La columna "Var." compara ${c.year} con ${c.year - 1}.` +
@@ -318,7 +318,7 @@ export function EriPage({ c }: { c: Ctx }) {
   return (
     <Sheet c={c} kicker="1 · Estados financieros" title="Estado de resultado integral" lead={N.statementLead(c, "eri")}>
       <Fig n="Tabla 2" title={`Estado de resultado integral comparativo, ${c.years[0]}–${c.year}`}>
-        {has ? <StatementTable c={c} kind="eri" max={34} /> : <SummaryTable c={c} />}
+        {has ? <StatementTable c={c} kind="eri" max={30} /> : <SummaryTable c={c} />}
       </Fig>
       <Fig n="Tabla 3" title="Márgenes sobre ingresos (calculados con cifras exactas)" width={W}>
         <View style={{ borderTopWidth: 0.75, borderColor: COLOR.rule }}>
