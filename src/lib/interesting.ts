@@ -221,8 +221,7 @@ async function compute(anio: number): Promise<InterestingPool> {
     });
   }
   empresas.sort((a, b) => b.signals.length - a.signals.length || a.rank - b.rank);
-  const dbg = `rows=${rows.length} exp=${new Set(rows.map((r) => r.expediente)).size} y${anio}=${rows.filter((r) => r.anio === anio).length} ruc=${rows.filter((r) => r.anio === anio && r.ruc).length} cos=${cos.size} ing=${byRevenue.length}`;
-  return { anio, desde, evaluadas: byRevenue.length, elegibles: eligible.length, excluidas, porSenal, empresas, debug: dbg };
+  return { anio, desde, evaluadas: byRevenue.length, elegibles: eligible.length, excluidas, porSenal, empresas };
 }
 
 export function getInteresting(anio: number): Promise<InterestingPool> {

@@ -32,6 +32,5 @@ export type InterestingPool = {
   excluidas: { sinCincoAnios: number; sinNiif: number; patrimonio: number; inactivaOParcial: number; holding: number };
   porSenal: Record<SignalId, number>;
   empresas: Interesting[];
-  debug?: string;
 };
 
