@@ -39,7 +39,7 @@ function Dual({ render }: { render: (w: number, h: number) => ReactNode }) {
 
 const isNum = (v: number | null | undefined): v is number => typeof v === "number" && Number.isFinite(v);
 
-function niceStep(range: number, ticks: number) {
+export function niceStep(range: number, ticks: number) {
   const raw = range / ticks;
   const mag = Math.pow(10, Math.floor(Math.log10(raw || 1)));
   const norm = raw / mag;
@@ -60,7 +60,7 @@ function scale(values: (number | null)[], ticksWanted = 3) {
   return { min, max, ticks };
 }
 
-function regression(values: (number | null)[]) {
+export function regression(values: (number | null)[]) {
   const pts = values
     .map((v, i) => (isNum(v) ? { x: i, y: v } : null))
     .filter((p): p is { x: number; y: number } => p !== null);
@@ -96,7 +96,7 @@ function Legend({ series, trend }: { series: Series[]; trend?: boolean }) {
   );
 }
 
-function XLabels({ categories, x, vh }: { categories: string[]; x: (i: number) => number; vh: number }) {
+export function XLabels({ categories, x, vh }: { categories: string[]; x: (i: number) => number; vh: number }) {
   const every = categories.length > 9 ? 2 : 1;
   return (
     <>
@@ -111,7 +111,7 @@ function XLabels({ categories, x, vh }: { categories: string[]; x: (i: number) =
   );
 }
 
-function Events({
+export function Events({
   events,
   categories,
   x,

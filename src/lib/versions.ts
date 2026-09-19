@@ -4,6 +4,17 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const RELEASES: Release[] = [
   {
+    version: "0.11",
+    date: "2026-09-18",
+    title: "Gráficos de línea interactivos",
+    changes: [
+      "Ingresos vs utilidad neta, productividad y ciclo de efectivo pasan de columnas a líneas, con un punto por año.",
+      "Al pasar el cursor (o tocar) sobre un año aparece un cuadro flotante con el valor y su cambio frente al año anterior.",
+      "El gráfico del ciclo de efectivo muestra solo el total (CCC).",
+      "Resumen: nuevos gráficos de línea de ROE, ROA, margen EBITDA y razón corriente.",
+    ],
+  },
+  {
     version: "0.10",
     date: "2026-09-18",
     title: "Celular, puntaje con colores y distribución",

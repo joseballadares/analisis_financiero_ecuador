@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import type { CompanyYearFinancial, RatioDist } from "@/lib/db";
 import type { YearRatios } from "@/lib/star";
 import { formatCompactMoney, formatNumber, formatPercent, formatRatioValue } from "@/lib/format";
-import { BarChart, C, EVENTS, LineChart, type Series } from "@/components/charts";
+import { C, EVENTS } from "@/components/charts";
+import LineInteractive, { type Unit } from "@/components/LineInteractive";
 import { RankBanner, SixTiles, VerticalEquations, type Amounts } from "@/components/SummaryBlocks";
 import { EmployeesCard, RankCard } from "@/components/TrajectoryCards";
 import DistributionChart, { type DistItem } from "@/components/DistributionChart";
@@ -82,14 +83,6 @@ export default function ResumenTab({
       ? `Los ingresos ${verb(cIng)} ${formatPercent(Math.abs(cIng), 0)} desde ${first.anio}` +
         (cUti !== null ? `; la utilidad neta, ${cUti >= 0 ? "" : "-"}${formatPercent(Math.abs(cUti), 0)}` : "")
       : "Ingresos vs utilidad neta";
-  const tips = trend.map((f) => {
-    const v = ven(f);
-    const u = num(f.metrics.utilidad_neta);
-    return `${f.anio} · Ingresos ${formatCompactMoney(num(f.metrics.ingresos_ventas))} · Utilidad neta ${formatCompactMoney(u)}${
-      v && u !== null ? ` · Margen neto ${formatPercent(u / v, 1)}` : ""
-    }`;
-  });
-
   // Productividad
   const prod = trend.map((f) => {
     const v = ven(f);
@@ -100,18 +93,58 @@ export default function ResumenTab({
   const pLast = [...prod].reverse().find((v) => v !== null) ?? null;
   const pChange = change(pFirst, pLast);
 
-  // Ciclo de efectivo
-  // Días mayores a 2 años no son plazos reales (rotaciones casi nulas); se omiten para no deformar la escala.
-  const days = (k: string) => val(k).map((v) => (v !== null && v >= 0 && v <= 730 ? v : null));
-  const dso = days("per_med_cobranza");
-  const dio = days("dio");
-  const dpo = days("per_med_pago");
+  // Ciclo de efectivo (CCC = DSO + DIO - DPO); plazos absurdos (rotaciones casi nulas) se omiten.
+  const ccc = val("ccc").map((v) => (v !== null && Math.abs(v) <= 1500 ? v : null));
   const cccNow = num(byYear[currentYear]?.values.ccc);
-  const cycleSeries: Series[] = [
-    { name: "Cobro", color: C.blue, values: dso },
-    { name: "Inventario", color: C.gray, values: dio },
-    { name: "Pago", color: C.blueSoft, values: dpo },
-  ].filter((s) => has(s.values, 1));
+
+  // Indicadores de rentabilidad y liquidez en el tiempo
+  const lineTitle = (name: string, vals: (number | null)[], fmt: (v: number) => string) => {
+    const idx = vals.map((v, i) => (v !== null ? i : -1)).filter((i) => i >= 0);
+    if (idx.length === 0) return name;
+    const f = idx[0];
+    const l = idx[idx.length - 1];
+    const vf = vals[f] as number;
+    const vl = vals[l] as number;
+    return f === l ? `${name}: ${fmt(vl)} en ${cats[l]}` : `${name} ${fmt(vl)} en ${cats[l]}, frente a ${fmt(vf)} en ${cats[f]}`;
+  };
+  const roeS = val("roe");
+  const roaS = val("roa");
+  const ebitdaS = val("margen_ebitda");
+  const liqS = val("liquidez_corriente");
+  const ratioCards: { key: string; name: string; title: string; sub: string; unit: Unit; values: (number | null)[] }[] = [
+    {
+      key: "roe",
+      name: "ROE",
+      title: lineTitle("El ROE", roeS, (v) => formatPercent(v, 1)),
+      sub: "Rentabilidad del patrimonio: utilidad neta ÷ patrimonio",
+      unit: "percent" as Unit,
+      values: roeS,
+    },
+    {
+      key: "roa",
+      name: "ROA",
+      title: lineTitle("El ROA", roaS, (v) => formatPercent(v, 1)),
+      sub: "Rentabilidad de los activos: utilidad neta ÷ activos",
+      unit: "percent" as Unit,
+      values: roaS,
+    },
+    {
+      key: "ebitda",
+      name: "Margen EBITDA",
+      title: lineTitle("El margen EBITDA", ebitdaS, (v) => formatPercent(v, 1)),
+      sub: "EBITDA aproximado ÷ ingresos (solo años con balance NIIF)",
+      unit: "percent" as Unit,
+      values: ebitdaS,
+    },
+    {
+      key: "liq",
+      name: "Razón corriente",
+      title: lineTitle("La razón corriente", liqS, (v) => formatNumber(v, 2)),
+      sub: "Activo corriente ÷ pasivo corriente: veces que cubre sus deudas de corto plazo",
+      unit: "ratio" as Unit,
+      values: liqS,
+    },
+  ].filter((c) => has(c.values));
 
   const ranks = sorted
     .filter((f) => typeof f.posicion_general === "number" && f.posicion_general > 0 && f.anio <= currentYear)
@@ -136,11 +169,12 @@ export default function ResumenTab({
 
       {trend.length >= 2 && (
         <div className="grid items-start gap-4 lg:grid-cols-2 [&>*]:min-w-0">
-          <Card title={ivuTitle} sub="Ingresos y utilidad neta por año (pasa el cursor sobre cada año para ver los valores)">
-            <BarChart
+          <Card title={ivuTitle} sub="Cada línea tiene su propia escala; pasa el cursor por un punto para ver el valor de ese año">
+            <LineInteractive
               categories={cats}
               events={EVENTS}
-              tooltips={tips}
+              unit="money"
+              stacked
               series={[
                 { name: "Ingresos", color: C.gray, values: ingS },
                 { name: "Utilidad neta", color: C.blue, values: utiS },
@@ -154,33 +188,38 @@ export default function ResumenTab({
                   ? `Cada empleado genera ${formatCompactMoney(pLast)} en ingresos, ${formatPercent(Math.abs(pChange), 0)} ${pChange >= 0 ? "más" : "menos"} que en ${first.anio}`
                   : "Productividad: ingresos por empleado"
               }
-              sub="Ingresos por empleado, con su tendencia"
+              sub="Ingresos por empleado, con su tendencia (línea punteada)"
             >
-              <BarChart
+              <LineInteractive
                 categories={cats}
                 trend
                 events={EVENTS}
+                unit="money"
                 series={[{ name: "Ingresos por empleado", color: C.blue, values: prod }]}
               />
             </Card>
           )}
-          {cycleSeries.length > 0 && (
+          {ratioCards.map((c) => (
+            <Card key={c.key} title={c.title} sub={c.sub}>
+              <LineInteractive categories={cats} events={EVENTS} unit={c.unit} series={[{ name: c.name, color: C.blue, values: c.values }]} />
+            </Card>
+          ))}
+          {has(ccc, 1) && (
             <Card
               title={
                 cccNow !== null
                   ? cccNow >= 0
                     ? `El capital queda atrapado ${formatNumber(cccNow, 0)} días en la operación`
                     : `Los proveedores financian ${formatNumber(Math.abs(cccNow), 0)} días de la operación`
-                  : "Ciclo de efectivo: días de cobro, inventario y pago"
+                  : "Ciclo de conversión de efectivo (CCC)"
               }
-              sub="Días de cobro (DSO), de inventario (DIO) y de pago (DPO); disponible en los años con balance NIIF"
+              sub="CCC = días de cobro + días de inventario − días de pago; disponible en los años con balance NIIF"
             >
-              <LineChart
+              <LineInteractive
                 categories={cats}
                 events={EVENTS}
-                endLabels
-                format={(v) => `${formatNumber(v, 0)} d`}
-                series={cycleSeries}
+                unit="days"
+                series={[{ name: "Ciclo de efectivo (CCC)", color: C.blue, values: ccc }]}
               />
             </Card>
           )}
