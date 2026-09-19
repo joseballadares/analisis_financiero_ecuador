@@ -101,7 +101,7 @@ function XLabels({ categories, x, vh }: { categories: string[]; x: (i: number) =
   return (
     <>
       {categories.map((c, i) =>
-        i % every === 0 || i === categories.length - 1 ? (
+        i === categories.length - 1 || (i % every === 0 && categories.length - 1 - i >= every) ? (
           <text key={c + i} x={x(i)} y={vh - 8} textAnchor="middle" className="fill-muted" fontSize="11">
             {c}
           </text>

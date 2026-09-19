@@ -22,7 +22,7 @@ export function RankCard({ ranks, universe }: { ranks: Point[]; universe: Record
           <div className="text-2xl font-semibold tabular-nums">#{nf(first.value)}</div>
           <div className="text-[11px] text-muted">de {universe[first.anio] ? nf(universe[first.anio]) : "—"}</div>
         </div>
-        <div className="flex flex-1 justify-center">
+        <div className="flex min-w-0 flex-1 justify-center [&_svg]:h-auto [&_svg]:max-w-full">
           {/* posición menor = mejor; se invierte el eje para que subir signifique mejorar */}
           <Sparkline values={ranks.map((r) => -r.value)} width={190} height={44} tone={last.value < first.value ? "good" : last.value > first.value ? "bad" : "flat"} title="Posición en el ranking (sube = mejora)" />
         </div>
@@ -65,7 +65,7 @@ export function EmployeesCard({ points }: { points: Point[] }) {
           <div className="text-[11px] text-muted">{first.anio}</div>
           <div className="text-2xl font-semibold tabular-nums">{nf(first.value)}</div>
         </div>
-        <div className="flex flex-1 justify-center">
+        <div className="flex min-w-0 flex-1 justify-center [&_svg]:h-auto [&_svg]:max-w-full">
           <Sparkline values={points.map((p) => p.value)} width={190} height={44} color="var(--chart-blue)" title="Empleados reportados" />
         </div>
         <div className="text-right">
