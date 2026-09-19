@@ -63,6 +63,7 @@ export default async function RankingPage({
           negativo o menor a 10 % del activo, {pool.excluidas.inactivaOParcial.toLocaleString("es-EC")} inactivas o con datos parciales y{" "}
           {pool.excluidas.holding.toLocaleString("es-EC")} holdings.
         </p>
+        <p className="mt-1 text-[11px] text-muted">{pool.debug}</p>
         <div className="mt-6">
           <InterestingTable rows={pool.empresas} sectors={names} counts={pool.porSenal} />
         </div>
