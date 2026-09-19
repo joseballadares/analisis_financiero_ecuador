@@ -1,13 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import {
-  getCompanyByRuc,
-  getCompanyFinancials,
-  getCompanyBalanceSheet,
-  getPeerGroup,
-  type CompanyYearFinancial,
-} from "@/lib/db";
-import { getCatalogNames, getCiiuDescription, getCompanyBalanceRows, getRankingUniverse, getSegmentShare } from "@/lib/queries";
+import { loadCompanyBundle } from "@/lib/companyData";
 import { formatMoney, formatPercent, segmentName, sentenceCase, titleCase } from "@/lib/format";
 import RatiosTable from "@/components/RatiosTable";
 import RatiosCards from "@/components/RatiosCards";
@@ -18,9 +11,7 @@ import PeersTab from "@/components/PeersTab";
 import StatementsView from "@/components/StatementsView";
 import SegmentCard from "@/components/SegmentCard";
 import ResumenTab from "@/components/ResumenTab";
-import { fillFromBalance, needsBalanceFill, isInactive, derivedRatios, STRUCTURE_KEYS } from "@/lib/derived";
-import { ratiosByYear } from "@/lib/star";
-import { creditScore, riskFlags } from "@/lib/risk";
+import { STRUCTURE_KEYS } from "@/lib/derived";
 import RiskTab from "@/components/RiskTab";
 import Tabs from "@/components/Tabs";
 import SearchBox from "@/components/SearchBox";
@@ -38,103 +29,43 @@ export default async function EmpresaPage({
   const { ruc } = await params;
   const { anio: anioParam } = await searchParams;
 
-  const company = await getCompanyByRuc(ruc);
-  if (!company) notFound();
-
-  const financials = await getCompanyFinancials(company.expediente);
-  if (financials.length === 0) {
+  const loaded = await loadCompanyBundle(ruc, anioParam);
+  if (loaded.kind === "notfound") notFound();
+  if (loaded.kind === "nodata") {
     return (
       <div className="mx-auto max-w-4xl px-4 sm:px-6 py-16">
-        <h1 className="text-2xl font-semibold">{company.nombre}</h1>
-        <p className="mt-2 text-muted">RUC {company.ruc}</p>
+        <h1 className="text-2xl font-semibold">{loaded.company.nombre}</h1>
+        <p className="mt-2 text-muted">RUC {loaded.company.ruc}</p>
         <p className="mt-6 text-sm text-muted">
           No hay información financiera registrada para esta empresa.
         </p>
       </div>
     );
   }
-
-  const years = financials.map((f) => f.anio);
-  const selectedYear = anioParam ? parseInt(anioParam, 10) : years[0];
-  const currentRaw = financials.find((f) => f.anio === selectedYear) ?? financials[0];
-
-  const balanceSheet = await getCompanyBalanceSheet(company.expediente, currentRaw.anio);
-
-  // La fuente trae ceros para algunas empresas del último año aunque el balance sí existe.
-  const filled = await Promise.all(
-    financials.map(async (f) => {
-      if (f.anio < 2019 || !needsBalanceFill(f.metrics)) return f;
-      const bs = f.anio === currentRaw.anio ? balanceSheet : await getCompanyBalanceSheet(company.expediente, f.anio);
-      return bs ? { ...f, metrics: fillFromBalance(f.metrics, bs.data, bs.catalog_id) } : f;
-    }),
-  );
-  const current = filled.find((f) => f.anio === currentRaw.anio) ?? filled[0];
-  const m = current.metrics;
-  const inactive = isInactive(m);
-  const ownIngresos = (m.ingresos_ventas ?? 0) > 0 ? (m.ingresos_ventas as number) : (m.ingresos_totales ?? 0);
-  const prevYear = filled.find((f) => f.anio === current.anio - 1);
-
-  const [balanceRows, segmentShare, universe, ciiuDesc] = await Promise.all([
-    getCompanyBalanceRows(company.expediente),
-    current.ciiu_n6 && !inactive
-      ? getSegmentShare({ ciiuN6: current.ciiu_n6, anio: current.anio, ingresos: ownIngresos })
-      : Promise.resolve(null),
-    getRankingUniverse(),
-    getCiiuDescription(current.ciiu_n6),
-  ]);
-
-  const byYearMap = ratiosByYear(filled, balanceRows);
-  const byYear = Object.fromEntries(byYearMap);
-  const ratioValues: Record<string, number> = {};
-  for (const [k, v] of Object.entries(byYear[current.anio]?.values ?? {})) {
-    if (typeof v === "number" && Number.isFinite(v)) ratioValues[k] = v;
-  }
-  const peerGroup = await getPeerGroup({
-    expediente: company.expediente,
-    anio: current.anio,
-    ciiuN6: current.ciiu_n6,
-    metrics: m,
-    ratioValues,
-  });
-  const tableYears = filled
-    .map((f) => f.anio)
-    .filter((y) => y <= current.anio && y > current.anio - 8)
-    .sort((a, b) => a - b);
-
-  const niifRows = balanceRows
-    .filter((r) => r.catalog_id === 3)
-    .map((r) => ({
-      anio: r.anio,
-      data: Object.fromEntries(Object.entries(r.data).filter(([, v]) => v !== 0 && Number.isFinite(v))),
-    }));
-  const sriYears = balanceRows.filter((r) => r.catalog_id !== 3).map((r) => r.anio);
-  const niifNames =
-    niifRows.length > 0
-      ? (() => {
-          const codes = new Set(niifRows.flatMap((r) => Object.keys(r.data)));
-          return getCatalogNames([3]).then((all) =>
-            Object.fromEntries(Object.entries(all[3] ?? {}).filter(([c]) => codes.has(c))),
-          );
-        })()
-      : Promise.resolve({} as Record<string, string>);
-  const names = await niifNames;
-
-  const niifMap = new Map(balanceRows.filter((r) => r.catalog_id === 3).map((r) => [r.anio, r.data]));
-  const history = filled.map((f) => ({ anio: f.anio, utilidad: typeof f.metrics.utilidad_neta === "number" ? f.metrics.utilidad_neta : null }));
-  const curValues = byYear[current.anio]?.values ?? {};
-  const score = creditScore({ values: curValues, m, history: history.filter((h) => h.anio <= current.anio) });
-  const flags = inactive
-    ? []
-    : riskFlags({
-        year: current.anio,
-        m,
-        prevM: prevYear?.metrics,
-        values: curValues,
-        prevValues: byYear[current.anio - 1]?.values,
-        niif: niifMap.get(current.anio),
-        prevNiif: niifMap.get(current.anio - 1),
-        history,
-      });
+  const {
+    company,
+    years,
+    filled,
+    current,
+    m,
+    inactive,
+    ownIngresos,
+    prevYear,
+    balanceSheet,
+    balanceRows,
+    segmentShare,
+    universe,
+    ciiuDesc,
+    byYear,
+    peerGroup,
+    tableYears,
+    niifRows,
+    sriYears,
+    names,
+    curValues,
+    score,
+    flags,
+  } = loaded.bundle;
   const alertCount = flags.filter((f) => f.severity !== "info").length;
   const rankNow = current.posicion_general;
   const facts = [
@@ -184,7 +115,16 @@ export default async function EmpresaPage({
             )}
           </p>
         </div>
-        <YearSelect ruc={ruc} years={years} current={current.anio} />
+        <div className="flex flex-wrap items-center gap-3">
+          <a
+            href={`/api/empresa/${ruc}/informe?anio=${current.anio}`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium hover:border-brand hover:text-brand"
+            title="Descarga el informe profesional en PDF (12 páginas) de este año"
+          >
+            <span aria-hidden>⬇</span> Informe profesional (PDF)
+          </a>
+          <YearSelect ruc={ruc} years={years} current={current.anio} />
+        </div>
       </div>
 
       {inactive && (

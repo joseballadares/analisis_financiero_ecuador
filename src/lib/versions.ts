@@ -4,6 +4,17 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const RELEASES: Release[] = [
   {
+    version: "0.12",
+    date: "2026-09-18",
+    title: "Informe profesional en PDF",
+    changes: [
+      "Nuevo botón en cada perfil para descargar el informe profesional de 12 páginas en PDF.",
+      "Estructura de informe de auditoría: portada, contenido y bases de preparación, estados financieros (situación financiera, resultado integral y notas) y luego el análisis.",
+      "Análisis con títulos que resumen la conclusión: resumen ejecutivo, perfil y trayectoria, rentabilidad y DuPont, liquidez y solvencia, razones financieras, comparación con pares y riesgo.",
+      "Historial desde 2019, gráficos vectoriales, numeración de tablas y figuras, y redacción generada por reglas sobre los datos.",
+    ],
+  },
+  {
     version: "0.11",
     date: "2026-09-18",
     title: "Gráficos de línea interactivos",
