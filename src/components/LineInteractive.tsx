@@ -112,7 +112,7 @@ export default function LineInteractive({
   const PAD = { l: narrow ? 46 : 54, r: 18, t: stacked ? 34 : 26, b: 28 };
   const panels: LSeries[][] = stacked ? series.map((s) => [s]) : [series];
   const panelH = stacked ? (narrow ? 108 : 120) : narrow ? 170 : 190;
-  const gap = stacked ? 22 : 0;
+  const gap = stacked ? 38 : 0;
   const vh = PAD.t + panels.length * panelH + (panels.length - 1) * gap + PAD.b;
   const iw = vw - PAD.l - PAD.r;
   const step = n > 1 ? (iw - 16) / (n - 1) : 0;
@@ -154,7 +154,7 @@ export default function LineInteractive({
           return (
             <g key={pi}>
               {stacked && (
-                <text x={PAD.l} y={yTop - 8} fontSize="11" fontWeight="600" style={{ fill: ps[0].color }}>
+                <text x={PAD.l} y={yTop - 12} fontSize="11" fontWeight="600" style={{ fill: ps[0].color }}>
                   {ps[0].name}
                 </text>
               )}

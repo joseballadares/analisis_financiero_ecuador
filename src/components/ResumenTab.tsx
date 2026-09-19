@@ -109,7 +109,8 @@ export default function ResumenTab({
   };
   const roeS = val("roe");
   const roaS = val("roa");
-  const ebitdaS = val("margen_ebitda");
+  // Sin costos reportados el EBITDA queda sobrestimado (márgenes de 100%): esos años se omiten.
+  const ebitdaS = val("margen_ebitda").map((v, i) => ((trend[i].metrics.costos_ventas_prod ?? 0) > 0 ? v : null));
   const liqS = val("liquidez_corriente");
   const ratioCards: { key: string; name: string; title: string; sub: string; unit: Unit; values: (number | null)[] }[] = [
     {
