@@ -31,12 +31,14 @@ export function SignalChip({ s, detail = false }: { s: Signal; detail?: boolean 
 
 function Metric({ label, value, note, tone }: { label: string; value: string; note?: string; tone?: "pos" | "neg" }) {
   return (
-    <div className="min-w-0 px-3 first:pl-0 last:pr-0">
-      <div className="whitespace-nowrap text-[10.5px] font-medium uppercase tracking-wider text-muted">{label}</div>
-      <div className={`mt-1 text-[15px] font-semibold tabular-nums ${tone === "pos" ? "text-positive" : tone === "neg" ? "text-negative" : ""}`}>
+    <div className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0">
+      <div>
+        <div className="text-[11px] font-medium uppercase tracking-wider text-muted">{label}</div>
+        {note && <div className="text-[11px] text-muted/80">{note}</div>}
+      </div>
+      <div className={`whitespace-nowrap text-base font-semibold tabular-nums ${tone === "pos" ? "text-positive" : tone === "neg" ? "text-negative" : ""}`}>
         {value}
       </div>
-      {note && <div className="mt-0.5 whitespace-nowrap text-[10.5px] text-muted">{note}</div>}
     </div>
   );
 }
@@ -61,7 +63,7 @@ export default function FeaturedCard({ c, sector }: { c: CardCompany; sector?: s
         </div>
       )}
       <div className="flex-1" />
-      <div className="mt-5 grid grid-cols-3 divide-x divide-border rounded-xl bg-background/60 px-3 py-3">
+      <div className="mt-5 divide-y divide-border rounded-xl bg-background/60 px-4 py-3">
         <Metric label="Ingresos" value={formatCompactMoney(c.ingresos)} note={`puesto ${c.rank.toLocaleString("es-EC")}`} />
         <Metric label="Margen neto" value={c.margen === null ? "—" : formatPercent(c.margen, 1)} tone={tone(c.margen)} />
         <Metric label="ROE" value={c.roe === null ? "—" : formatPercent(c.roe, 1)} tone={tone(c.roe)} />
