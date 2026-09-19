@@ -306,19 +306,19 @@ function CycleFormula({
     const v = cur?.values[key];
     return (
       <div
-        className={`w-44 rounded-xl border p-3 ${big ? "border-brand bg-brand-soft" : "border-border bg-surface"}`}
+        className={`min-w-[10rem] flex-1 rounded-xl border p-3 ${big ? "border-brand bg-brand-soft sm:flex-[1.25]" : "border-border bg-surface"}`}
         title={info.formula}
       >
         <div className="text-xs font-medium leading-snug">{info.nombre}</div>
         <div className="mt-1 flex items-center justify-between gap-1">
-          <span className={`font-semibold tabular-nums ${big ? "text-2xl" : "text-lg"}`}>
+          <span className={`whitespace-nowrap font-semibold tabular-nums ${big ? "text-2xl" : "text-lg"}`}>
             {formatRatioValue(key, typeof v === "number" ? v : null, 1)}
           </span>
           <Sparkline values={seriesOf(key)} width={48} height={20} tone={trendTone(seriesOf(key), info.direction)} title={info.nombre} />
         </div>
-        <div className="mt-1 flex items-center justify-between gap-1">
-          <span className="text-[11.5px] leading-snug text-muted">{help}</span>
-          <Semaforo ratioKey={key} dist={dist[key]} dir={info.direction} width={56} />
+        <div className="mt-1 text-[11.5px] leading-snug text-muted">{help}</div>
+        <div className="mt-2">
+          <Semaforo ratioKey={key} dist={dist[key]} dir={info.direction} width={72} />
         </div>
       </div>
     );
@@ -330,13 +330,13 @@ function CycleFormula({
         Cuánto tiempo permanece el capital atrapado en la operación: lo que se tarda en cobrar y en vender el inventario,
         menos lo que se tarda en pagar a los proveedores.
       </p>
-      <div className="mt-4 flex flex-wrap items-center gap-2">
+      <div className="mt-4 flex flex-wrap items-stretch gap-2">
         {tile("per_med_cobranza", CYCLE[0].help)}
-        <span className="text-xl text-muted">+</span>
+        <span className="self-center text-xl text-muted">+</span>
         {tile("dio", CYCLE[1].help)}
-        <span className="text-xl text-muted">−</span>
+        <span className="self-center text-xl text-muted">−</span>
         {tile("per_med_pago", CYCLE[2].help)}
-        <span className="text-xl text-muted">=</span>
+        <span className="self-center text-xl text-muted">=</span>
         {tile("ccc", "Días de capital atrapado en la operación", true)}
       </div>
       {typeof ccc === "number" && (
