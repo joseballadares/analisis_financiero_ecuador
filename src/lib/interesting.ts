@@ -10,7 +10,6 @@ import { SIGNALS, type Interesting, type InterestingPool, type Signal, type Sign
 
 const VEN_F = VEN.replace(/metrics/g, "f.metrics");
 const POOL = 2000;
-const CANDIDATES = 4500;
 const TOP_SHARE = 0.9; // cada señal exige estar en el 10 % superior de las empresas elegibles
 
 export { SIGNALS } from "@/lib/interestingMeta";
@@ -30,6 +29,7 @@ type Row = {
   ciiu_n1: string | null;
   ciiu_n6: string | null;
   posicion_general: number | null;
+  niif: boolean;
   metrics: Metrics;
   ruc: string | null;
   nombre: string;
@@ -38,34 +38,23 @@ type Row = {
 async function compute(anio: number): Promise<InterestingPool> {
   const database = db();
   const desde = anio - 4;
-  // Candidatas: las primeras por posición general de la SCVS (usa un índice, es rápido); luego se ordenan por
-  // ingresos operacionales y se conservan las POOL primeras. La diferencia con un orden puro por ingresos
-  // solo afecta a empresas del borde de la lista.
-  const [rows, niif] = await Promise.all([
-    database.sql<Row>`
-      WITH pool AS (
-        SELECT expediente FROM company_year_financials
-        WHERE anio = ${anio} AND posicion_general IS NOT NULL
-        ORDER BY posicion_general LIMIT ${CANDIDATES}
-      )
-      SELECT f.expediente, f.anio, f.ciiu_n1, f.ciiu_n6, f.posicion_general, f.metrics, c.ruc, c.nombre
-      FROM company_year_financials f
-      JOIN pool p ON p.expediente = f.expediente
-      JOIN companies c ON c.expediente = f.expediente
-      WHERE f.anio BETWEEN ${desde} AND ${anio}
-    `,
-    database.sql<{ expediente: number }>`
-      WITH pool AS (
-        SELECT expediente FROM company_year_financials
-        WHERE anio = ${anio} AND posicion_general IS NOT NULL
-        ORDER BY posicion_general LIMIT ${CANDIDATES}
-      )
-      SELECT b.expediente FROM balance_line_items b JOIN pool p ON p.expediente = b.expediente
-      WHERE b.anio = ${anio} AND b.catalog_id = 3
-    `,
-  ]);
+  // Población: las POOL empresas con más ingresos operacionales del último año (una sola consulta; el balance NIIF
+  // se comprueba con la llave primaria de balance_line_items).
+  const rows = await database.sql<Row>`
+    WITH pool AS (
+      SELECT f.expediente FROM company_year_financials f
+      WHERE f.anio = ${anio} AND ${database.sql.raw(VEN_F)} > 0
+      ORDER BY ${database.sql.raw(VEN_F)} DESC LIMIT ${POOL}
+    )
+    SELECT f.expediente, f.anio, f.ciiu_n1, f.ciiu_n6, f.posicion_general, f.metrics, c.ruc, c.nombre,
+           EXISTS (SELECT 1 FROM balance_line_items b WHERE b.expediente = f.expediente AND b.anio = ${anio} AND b.catalog_id = 3) AS niif
+    FROM company_year_financials f
+    JOIN pool p ON p.expediente = f.expediente
+    JOIN companies c ON c.expediente = f.expediente
+    WHERE f.anio BETWEEN ${desde} AND ${anio}
+  `;
 
-  const hasNiif = new Set(niif.map((r) => r.expediente));
+  const hasNiif = new Set(rows.filter((r) => r.niif).map((r) => r.expediente));
   const posOf = new Map<string, number>();
   for (const r of rows) if (r.posicion_general) posOf.set(`${r.expediente}:${r.anio}`, r.posicion_general);
 
