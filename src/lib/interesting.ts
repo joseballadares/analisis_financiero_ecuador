@@ -10,6 +10,7 @@ import { SIGNALS, type Interesting, type InterestingPool, type Signal, type Sign
 
 const VEN_F = VEN.replace(/metrics/g, "f.metrics");
 const POOL = 2000;
+const CANDIDATES = 3000;
 const TOP_SHARE = 0.9; // cada señal exige estar en el 10 % superior de las empresas elegibles
 
 export { SIGNALS } from "@/lib/interestingMeta";
@@ -28,6 +29,7 @@ type Row = {
   anio: number;
   ciiu_n1: string | null;
   ciiu_n6: string | null;
+  posicion_general: number | null;
   metrics: Metrics;
   ruc: string | null;
   nombre: string;
@@ -36,36 +38,27 @@ type Row = {
 async function compute(anio: number): Promise<InterestingPool> {
   const database = db();
   const desde = anio - 4;
-  const [rows, ranks, niif] = await Promise.all([
+  // Candidatas: las primeras por posición general de la SCVS (usa un índice, es rápido); luego se ordenan por
+  // ingresos operacionales y se conservan las POOL primeras. La diferencia con un orden puro por ingresos
+  // solo afecta a empresas del borde de la lista.
+  const [rows, niif] = await Promise.all([
     database.sql<Row>`
       WITH pool AS (
-        SELECT f.expediente FROM company_year_financials f
-        WHERE f.anio = ${anio} AND ${database.sql.raw(VEN_F)} > 0
-        ORDER BY ${database.sql.raw(VEN_F)} DESC LIMIT ${POOL}
+        SELECT expediente FROM company_year_financials
+        WHERE anio = ${anio} AND posicion_general IS NOT NULL
+        ORDER BY posicion_general LIMIT ${CANDIDATES}
       )
-      SELECT f.expediente, f.anio, f.ciiu_n1, f.ciiu_n6, f.metrics, c.ruc, c.nombre
+      SELECT f.expediente, f.anio, f.ciiu_n1, f.ciiu_n6, f.posicion_general, f.metrics, c.ruc, c.nombre
       FROM company_year_financials f
       JOIN pool p ON p.expediente = f.expediente
       JOIN companies c ON c.expediente = f.expediente
       WHERE f.anio BETWEEN ${desde} AND ${anio}
     `,
-    database.sql<{ expediente: number; anio: number; r: number }>`
-      WITH pool AS (
-        SELECT f.expediente FROM company_year_financials f
-        WHERE f.anio = ${anio} AND ${database.sql.raw(VEN_F)} > 0
-        ORDER BY ${database.sql.raw(VEN_F)} DESC LIMIT ${POOL}
-      ), rk AS (
-        SELECT f.expediente, f.anio, rank() OVER (PARTITION BY f.anio ORDER BY ${database.sql.raw(VEN_F)} DESC)::int AS r
-        FROM company_year_financials f
-        WHERE f.anio IN (${desde}, ${anio}) AND ${database.sql.raw(VEN_F)} > 0
-      )
-      SELECT rk.expediente, rk.anio, rk.r FROM rk JOIN pool p ON p.expediente = rk.expediente
-    `,
     database.sql<{ expediente: number }>`
       WITH pool AS (
-        SELECT f.expediente FROM company_year_financials f
-        WHERE f.anio = ${anio} AND ${database.sql.raw(VEN_F)} > 0
-        ORDER BY ${database.sql.raw(VEN_F)} DESC LIMIT ${POOL}
+        SELECT expediente FROM company_year_financials
+        WHERE anio = ${anio} AND posicion_general IS NOT NULL
+        ORDER BY posicion_general LIMIT ${CANDIDATES}
       )
       SELECT b.expediente FROM balance_line_items b JOIN pool p ON p.expediente = b.expediente
       WHERE b.anio = ${anio} AND b.catalog_id = 3
@@ -73,8 +66,8 @@ async function compute(anio: number): Promise<InterestingPool> {
   ]);
 
   const hasNiif = new Set(niif.map((r) => r.expediente));
-  const rankOf = new Map<string, number>();
-  for (const r of ranks) rankOf.set(`${r.expediente}:${r.anio}`, r.r);
+  const posOf = new Map<string, number>();
+  for (const r of rows) if (r.posicion_general) posOf.set(`${r.expediente}:${r.anio}`, r.posicion_general);
 
   type Co = { expediente: number; ruc: string; nombre: string; sector: string | null; ciiu6: string | null; years: Map<number, Metrics> };
   const cos = new Map<number, Co>();
@@ -89,9 +82,16 @@ async function compute(anio: number): Promise<InterestingPool> {
     }
   }
 
+  // Población: las POOL empresas con más ingresos operacionales del último año.
+  const byRevenue = [...cos.values()]
+    .filter((c) => c.years.get(anio) && ing(c.years.get(anio) as Metrics) > 0)
+    .sort((a, b) => ing(b.years.get(anio) as Metrics) - ing(a.years.get(anio) as Metrics))
+    .slice(0, POOL);
+  const revRank = new Map<number, number>(byRevenue.map((c, i) => [c.expediente, i + 1]));
+
   // Controles de calidad: datos completos y comparables en los 5 años.
   const eligible: Co[] = [];
-  for (const c of cos.values()) {
+  for (const c of byRevenue) {
     const m = c.years.get(anio);
     if (!m) continue;
     let full = true;
@@ -142,10 +142,10 @@ async function compute(anio: number): Promise<InterestingPool> {
     const cagr = Math.pow(i1 / i0, 1 / 4) - 1;
     if (ups >= 3 && cagr > 0) lists.crecimiento.push({ co: c, value: cagr, detail: `Ingresos +${pct(cagr)} anual (${desde}–${anio})`, tone: "up" });
 
-    // Puestos ganados en el ranking por ingresos
-    const r0 = rankOf.get(`${c.expediente}:${desde}`);
-    const r1 = rankOf.get(`${c.expediente}:${anio}`);
-    if (r0 && r1 && r0 - r1 > 0) lists.escalada.push({ co: c, value: r0 - r1, detail: `Subió ${formatNumber(r0 - r1, 0)} puestos por ingresos desde ${desde} (del ${formatNumber(r0, 0)} al ${formatNumber(r1, 0)})`, tone: "up" });
+    // Puestos ganados en el ranking general de la Superintendencia
+    const r0 = posOf.get(`${c.expediente}:${desde}`);
+    const r1 = posOf.get(`${c.expediente}:${anio}`);
+    if (r0 && r1 && r0 - r1 > 0) lists.escalada.push({ co: c, value: r0 - r1, detail: `Subió ${formatNumber(r0 - r1, 0)} puestos en el ranking de la Superintendencia desde ${desde} (del ${formatNumber(r0, 0)} al ${formatNumber(r1, 0)})`, tone: "up" });
 
     // Giro del margen neto
     const u0 = (c.years.get(desde) as Metrics).utilidad_neta;
@@ -206,7 +206,7 @@ async function compute(anio: number): Promise<InterestingPool> {
       ruc: c.ruc,
       nombre: c.nombre,
       sector: c.sector,
-      rank: rankOf.get(`${c.expediente}:${anio}`) ?? 0,
+      rank: revRank.get(c.expediente) ?? 0,
       ingresos: ing(m),
       activos: m.activos ?? null,
       utilidad: m.utilidad_neta ?? null,
@@ -216,7 +216,7 @@ async function compute(anio: number): Promise<InterestingPool> {
     });
   }
   empresas.sort((a, b) => b.signals.length - a.signals.length || a.rank - b.rank);
-  return { anio, desde, evaluadas: cos.size, elegibles: eligible.length, porSenal, empresas };
+  return { anio, desde, evaluadas: byRevenue.length, elegibles: eligible.length, porSenal, empresas };
 }
 
 export function getInteresting(anio: number): Promise<InterestingPool> {

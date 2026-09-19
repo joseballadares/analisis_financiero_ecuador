@@ -133,7 +133,7 @@ export default function AcercaPage() {
           <li><strong>Operación eficiente:</strong> margen EBITDA del último año, dentro de su sector (excluye empresas sin depreciación reportada, cuyo EBITDA saldría subestimado).</li>
           <li><strong>Mejora operativa:</strong> aumento del margen EBITDA desde hace 3 años.</li>
           <li><strong>Crecimiento sostenido:</strong> crecimiento anual compuesto de ingresos en 5 años, con alza en al menos 3 de los 4 años.</li>
-          <li><strong>Escalada en el ranking:</strong> puestos ganados por ingresos en 5 años.</li>
+          <li><strong>Escalada en el ranking:</strong> puestos ganados en 5 años en el ranking general de la Superintendencia.</li>
           <li><strong>Giro de resultados:</strong> mayor cambio del margen neto en 5 años (al menos 3 puntos), hacia arriba o hacia abajo.</li>
         </ul>
         <p>
