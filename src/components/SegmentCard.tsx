@@ -38,7 +38,7 @@ export default function SegmentCard({
         </div>
       </div>
       <div className="mt-4 h-2 rounded-full bg-border">
-        <div className="h-2 rounded-full bg-brand" style={{ width: `${Math.min(100, Math.max(0.5, cur * 100))}%` }} />
+        <div className="h-2 rounded-full" style={{ background: "var(--chart-blue)", width: `${Math.min(100, Math.max(0.5, cur * 100))}%` }} />
       </div>
       <h4 className="mt-5 text-xs font-semibold uppercase tracking-wide text-muted">Empresas líderes de la clase</h4>
       <ol className="mt-2 space-y-1.5 text-sm">

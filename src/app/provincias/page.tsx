@@ -68,7 +68,7 @@ export default async function ProvinciasPage() {
                 <td className="px-4 py-2.5">
                   <div className="flex items-center gap-2">
                     <div className="h-2 flex-1 rounded-full bg-border">
-                      <div className="h-2 rounded-full bg-brand" style={{ width: `${(r.ingresos / max) * 100}%` }} />
+                      <div className="h-2 rounded-full" style={{ background: "var(--chart-blue)", width: `${(r.ingresos / max) * 100}%` }} />
                     </div>
                     <span className="w-12 text-right text-xs tabular-nums text-muted">
                       {formatPercent(r.ingresos / totalIng, 1)}

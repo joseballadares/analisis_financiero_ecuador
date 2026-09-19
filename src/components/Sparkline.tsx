@@ -1,13 +1,19 @@
+import { TONE_COLOR, type Tone } from "@/lib/trend";
+
 export default function Sparkline({
   values,
   width = 84,
   height = 22,
   title,
+  tone = "flat",
+  color,
 }: {
   values: (number | null)[];
   width?: number;
   height?: number;
   title?: string;
+  tone?: Tone;
+  color?: string;
 }) {
   const pts = values
     .map((v, i) => (typeof v === "number" && Number.isFinite(v) ? { i, v } : null))
@@ -15,6 +21,7 @@ export default function Sparkline({
   if (pts.length < 2) {
     return <span className="text-xs text-muted">—</span>;
   }
+  const stroke = color ?? TONE_COLOR[tone];
   const min = Math.min(...pts.map((p) => p.v));
   const max = Math.max(...pts.map((p) => p.v));
   const span = max - min || 1;
@@ -28,13 +35,13 @@ export default function Sparkline({
       {title && <title>{title}</title>}
       <polyline
         fill="none"
-        strokeWidth="1.5"
+        strokeWidth="1.75"
         strokeLinejoin="round"
         strokeLinecap="round"
         points={pts.map((p) => `${x(p.i).toFixed(1)},${y(p.v).toFixed(1)}`).join(" ")}
-        style={{ stroke: "var(--brand)", opacity: 0.85 }}
+        style={{ stroke }}
       />
-      <circle cx={x(last.i)} cy={y(last.v)} r="2.5" style={{ fill: "var(--brand)" }} />
+      <circle cx={x(last.i)} cy={y(last.v)} r="2.5" style={{ fill: stroke }} />
     </svg>
   );
 }

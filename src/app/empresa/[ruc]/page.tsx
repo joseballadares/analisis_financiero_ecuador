@@ -20,6 +20,8 @@ import SegmentCard from "@/components/SegmentCard";
 import ResumenTab from "@/components/ResumenTab";
 import { fillFromBalance, needsBalanceFill, isInactive, derivedRatios, STRUCTURE_KEYS } from "@/lib/derived";
 import { ratiosByYear } from "@/lib/star";
+import { creditScore, riskFlags } from "@/lib/risk";
+import RiskTab from "@/components/RiskTab";
 import Tabs from "@/components/Tabs";
 
 export const dynamic = "force-dynamic";
@@ -115,6 +117,23 @@ export default async function EmpresaPage({
       : Promise.resolve({} as Record<string, string>);
   const names = await niifNames;
 
+  const niifMap = new Map(balanceRows.filter((r) => r.catalog_id === 3).map((r) => [r.anio, r.data]));
+  const history = filled.map((f) => ({ anio: f.anio, utilidad: typeof f.metrics.utilidad_neta === "number" ? f.metrics.utilidad_neta : null }));
+  const curValues = byYear[current.anio]?.values ?? {};
+  const score = creditScore({ values: curValues, m, history: history.filter((h) => h.anio <= current.anio) });
+  const flags = inactive
+    ? []
+    : riskFlags({
+        year: current.anio,
+        m,
+        prevM: prevYear?.metrics,
+        values: curValues,
+        prevValues: byYear[current.anio - 1]?.values,
+        niif: niifMap.get(current.anio),
+        prevNiif: niifMap.get(current.anio - 1),
+        history,
+      });
+  const alertCount = flags.filter((f) => f.severity !== "info").length;
   const rankNow = current.posicion_general;
   const facts = [
     { label: "RUC", value: company.ruc },
@@ -208,6 +227,9 @@ export default async function EmpresaPage({
                   currentYear={current.anio}
                   universe={universe}
                   facts={facts}
+                  dist={dist}
+                  groupLabel={peerGroup ? `${peerGroup.levelLabel} (CIIU ${peerGroup.prefix})` : null}
+                  benchN={peerGroup?.benchmark.n ?? 0}
                   segment={
                     segmentShare && ownIngresos > 0 ? (
                       <SegmentCard
@@ -285,6 +307,15 @@ export default async function EmpresaPage({
                   </div>
                 ),
             },
+            ...(inactive
+              ? []
+              : [
+                  {
+                    id: "riesgo",
+                    label: alertCount > 0 ? `Alertas y crédito · ${alertCount}` : "Alertas y crédito",
+                    content: <RiskTab score={score} flags={flags} year={current.anio} />,
+                  },
+                ]),
             {
               id: "estados",
               label: "Estados financieros",

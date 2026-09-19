@@ -1,6 +1,10 @@
 @import "tailwindcss";
 
 :root {
+  --chart-blue: #1d5fc4;
+  --chart-blue-soft: #a9c3ec;
+  --chart-gray: #8b94a5;
+  --chart-gray-soft: #d3d8e0;
   --background: #f7f8fa;
   --surface: #ffffff;
   --foreground: #10151f;
@@ -32,6 +36,10 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
+    --chart-blue: #5b9dff;
+    --chart-blue-soft: #2a4a7d;
+    --chart-gray: #7c8698;
+    --chart-gray-soft: #2b3340;
     --background: #0b0f14;
     --surface: #12181f;
     --foreground: #e7ebf0;

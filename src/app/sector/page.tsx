@@ -81,7 +81,7 @@ export default async function SectorIndexPage() {
             growth: r.growth!,
             revenue: r.ingresos,
             size: r.empresas,
-            color: r.growth! >= natGrowth ? "var(--brand)" : "var(--accent)",
+            color: r.growth! >= natGrowth ? "var(--chart-blue)" : "var(--chart-gray)",
           }))}
         />
       </div>

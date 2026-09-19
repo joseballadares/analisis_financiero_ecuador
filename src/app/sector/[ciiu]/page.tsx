@@ -136,21 +136,21 @@ export default async function SectorDetailPage({
                   : undefined
               }
             >
-              <BarChart categories={cats} series={[{ name: "Ingresos", color: "var(--brand)", values: series.map((s) => s.ingresos) }]} />
+              <BarChart categories={cats} series={[{ name: "Ingresos", color: "var(--chart-blue)", values: series.map((s) => s.ingresos) }]} />
             </ChartCard>
             <ChartCard title="Empresas con ingresos reportados">
               <BarChart
                 categories={cats}
                 format={(v) => v.toLocaleString("es-EC")}
-                series={[{ name: "Empresas", color: "var(--accent)", values: series.map((s) => s.empresas) }]}
+                series={[{ name: "Empresas", color: "var(--chart-gray)", values: series.map((s) => s.empresas) }]}
               />
             </ChartCard>
             <ChartCard title="Concentración: participación de las mayores empresas">
               <LineChart
                 categories={cats}
                 series={[
-                  { name: "Top 10", color: "var(--brand)", values: series.map((s) => (s.ingresos > 0 ? s.top10 / s.ingresos : null)) },
-                  { name: "Top 5", color: "var(--accent)", values: series.map((s) => (s.ingresos > 0 ? s.top5 / s.ingresos : null)) },
+                  { name: "Top 10", color: "var(--chart-blue)", values: series.map((s) => (s.ingresos > 0 ? s.top10 / s.ingresos : null)) },
+                  { name: "Top 5", color: "var(--chart-gray)", values: series.map((s) => (s.ingresos > 0 ? s.top5 / s.ingresos : null)) },
                 ]}
               />
             </ChartCard>
@@ -158,7 +158,7 @@ export default async function SectorDetailPage({
               <LineChart
                 categories={cats}
                 format={(v) => formatPercent(v, 1)}
-                series={[{ name: "Margen neto mediano", color: "var(--brand)", values: series.map((s) => s.margen_mediano) }]}
+                series={[{ name: "Margen neto mediano", color: "var(--chart-blue)", values: series.map((s) => s.margen_mediano) }]}
               />
             </ChartCard>
           </div>
@@ -275,7 +275,7 @@ function Bar({ value }: { value: number }) {
     <td className="px-4 py-2.5">
       <div className="flex items-center gap-2">
         <div className="h-2 flex-1 rounded-full bg-border">
-          <div className="h-2 rounded-full bg-brand" style={{ width: `${Math.min(100, value * 100)}%` }} />
+          <div className="h-2 rounded-full" style={{ background: "var(--chart-blue)", width: `${Math.min(100, value * 100)}%` }} />
         </div>
         <span className="w-12 text-right text-xs tabular-nums text-muted">{formatPercent(value, 0)}</span>
       </div>

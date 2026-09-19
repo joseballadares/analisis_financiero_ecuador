@@ -1,9 +1,23 @@
 import type { RatioDist } from "@/lib/db";
 import type { YearRatios } from "@/lib/star";
 import { formatRatioValue } from "@/lib/format";
-import { CATEGORY_LABELS, CATEGORY_ORDER, FLAG_HELP, FLAG_LABEL, keysByCategory, ratioInfo } from "@/lib/ratioMeta";
+import { FLAG_HELP, FLAG_LABEL, GROUPS, ratioInfo } from "@/lib/ratioMeta";
+import { trendTone } from "@/lib/trend";
 import Sparkline from "@/components/Sparkline";
 import Semaforo from "@/components/Semaforo";
+
+const NEW_KEYS = new Set([
+  "margen_ebitda",
+  "roic",
+  "razon_inmediata",
+  "capital_trabajo",
+  "deuda_neta_ebitda",
+  "cobertura_ebitda",
+  "dio",
+  "ccc",
+  "fcf",
+  "fcf_margen",
+]);
 
 export default function RatiosTable({
   years,
@@ -18,8 +32,8 @@ export default function RatiosTable({
   only?: string[];
   showBenchmark?: boolean;
 }) {
-  const groups = keysByCategory();
   const current = years[years.length - 1];
+  const colSpan = years.length + (showBenchmark ? 3 : 2);
   return (
     <div className="overflow-x-auto rounded-xl border border-border">
       <table className="w-full text-xs">
@@ -36,36 +50,32 @@ export default function RatiosTable({
           </tr>
         </thead>
         <tbody>
-          {CATEGORY_ORDER.map((cat) => {
-            const keys = (groups[cat] ?? []).filter((k) => !only || only.includes(k));
-            const visible = keys.filter((k) => {
-              const info = ratioInfo(k);
-              if (!info) return false;
-              const anyValue = years.some((y) => typeof byYear[y]?.values[k] === "number");
-              // Los ratios nuevos que dependen de balance NIIF se ocultan si no hay ningún dato.
-              return anyValue || !(k in NEW_KEYS);
-            });
+          {GROUPS.map((g) => {
+            const visible = g.keys
+              .filter((k) => !only || only.includes(k))
+              .filter((k) => {
+                if (!ratioInfo(k)) return false;
+                const anyValue = years.some((y) => typeof byYear[y]?.values[k] === "number");
+                return anyValue || !NEW_KEYS.has(k);
+              });
             if (visible.length === 0) return null;
             return (
-              <FragmentRows key={cat} title={CATEGORY_LABELS[cat]} colSpan={years.length + (showBenchmark ? 3 : 2)}>
+              <FragmentRows key={g.id} title={g.label} desc={g.desc} colSpan={colSpan}>
                 {visible.map((k, idx) => {
                   const info = ratioInfo(k)!;
-                  const cur = byYear[current];
-                  const flag = cur?.flags[k];
+                  const flag = byYear[current]?.flags[k];
                   const series = years.map((y) => {
                     const v = byYear[y]?.values[k];
                     return typeof v === "number" ? v : null;
                   });
+                  const zebra = idx % 2 === 0 ? "bg-surface" : "bg-background";
                   return (
-                    <tr key={k} className={idx % 2 === 0 ? "bg-surface" : "bg-background"} title={info.formula}>
-                      <td className={`sticky left-0 z-10 px-3 py-2 ${idx % 2 === 0 ? "bg-surface" : "bg-background"}`}>
+                    <tr key={k} className={zebra} title={info.formula}>
+                      <td className={`sticky left-0 z-10 px-3 py-2 ${zebra}`}>
                         <div className="flex items-center gap-2">
                           <span>{info.nombre}</span>
                           {flag && (
-                            <span
-                              className="rounded border border-border px-1 text-[10px] uppercase tracking-wide text-muted"
-                              title={FLAG_HELP[flag]}
-                            >
+                            <span className="rounded border border-border px-1 text-[10px] uppercase tracking-wide text-muted" title={FLAG_HELP[flag]}>
                               {flag === "aprox_bajo" ? "⚠ " : ""}
                               {FLAG_LABEL[flag]}
                             </span>
@@ -76,15 +86,13 @@ export default function RatiosTable({
                       {years.map((y, i) => (
                         <td
                           key={y}
-                          className={`px-2 py-2 text-right tabular-nums whitespace-nowrap ${
-                            y === current ? "font-semibold" : "text-muted"
-                          }`}
+                          className={`px-2 py-2 text-right tabular-nums whitespace-nowrap ${y === current ? "font-semibold" : "text-muted"}`}
                         >
                           {formatRatioValue(k, series[i], 1)}
                         </td>
                       ))}
                       <td className="px-2 py-2 text-center">
-                        <Sparkline values={series} width={64} title={`${info.nombre}: ${years[0]}–${current}`} />
+                        <Sparkline values={series} width={64} tone={trendTone(series, info.direction)} title={`${info.nombre}: ${years[0]}–${current}`} />
                       </td>
                       {showBenchmark && (
                         <td className="px-2 py-2 text-center">
@@ -103,25 +111,13 @@ export default function RatiosTable({
   );
 }
 
-const NEW_KEYS: Record<string, true> = {
-  margen_ebitda: true,
-  roic: true,
-  razon_inmediata: true,
-  capital_trabajo: true,
-  deuda_neta_ebitda: true,
-  cobertura_ebitda: true,
-  dio: true,
-  ccc: true,
-  fcf: true,
-  fcf_margen: true,
-};
-
-function FragmentRows({ title, colSpan, children }: { title: string; colSpan: number; children: React.ReactNode }) {
+function FragmentRows({ title, desc, colSpan, children }: { title: string; desc: string; colSpan: number; children: React.ReactNode }) {
   return (
     <>
       <tr className="border-y border-border bg-background">
-        <td colSpan={colSpan} className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted">
-          {title}
+        <td colSpan={colSpan} className="px-3 py-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-foreground">{title}</span>
+          <span className="ml-3 text-[11px] normal-case text-muted">{desc}</span>
         </td>
       </tr>
       {children}

@@ -4,14 +4,11 @@ import { formatRatioValue, formatPercent } from "@/lib/format";
 import { FLAG_HELP, FLAG_LABEL, ratioInfo } from "@/lib/ratioMeta";
 import Sparkline from "@/components/Sparkline";
 import Semaforo from "@/components/Semaforo";
+import { trendTone } from "@/lib/trend";
 
 const STAR_KEYS = [
   "margen_ebitda",
   "fcf",
-  "per_med_cobranza",
-  "dio",
-  "per_med_pago",
-  "ccc",
   "roic",
   "liquidez_corriente",
   "deuda_neta_ebitda",
@@ -127,7 +124,7 @@ export default function StarRatios({
                 </div>
                 <div className="mt-2 flex items-end justify-between gap-3">
                   <div className="text-2xl font-semibold tabular-nums">{formatRatioValue(k, typeof v === "number" ? v : null, 1)}</div>
-                  <Sparkline values={seriesOf(k)} width={96} height={28} title={`${info.nombre}: ${years[0]}–${current}`} />
+                  <Sparkline values={seriesOf(k)} width={96} height={28} tone={trendTone(seriesOf(k), info.direction)} title={`${info.nombre}: ${years[0]}–${current}`} />
                 </div>
                 <div className="mt-2 flex items-center justify-between gap-2">
                   <p className="text-xs leading-snug text-muted">{HELP[k]}</p>
@@ -145,6 +142,8 @@ export default function StarRatios({
           valores.
         </p>
       </div>
+
+      <CycleFormula years={years} byYear={byYear} dist={dist} />
 
       <div>
         <h3 className="text-lg font-semibold">ROE en formato DuPont</h3>
@@ -272,5 +271,81 @@ function DuPontNode({
         </ul>
       )}
     </li>
+  );
+}
+
+const CYCLE = [
+  { key: "per_med_cobranza", help: "Días que tarda en cobrar a sus clientes." },
+  { key: "dio", help: "Días que el inventario espera antes de venderse." },
+  { key: "per_med_pago", help: "Días que tarda en pagar a sus proveedores." },
+];
+
+// Ciclo de conversión de efectivo como fórmula: DSO + DIO - DPO = CCC.
+function CycleFormula({
+  years,
+  byYear,
+  dist,
+}: {
+  years: number[];
+  byYear: Record<number, YearRatios>;
+  dist: Record<string, RatioDist>;
+}) {
+  const current = years[years.length - 1];
+  const cur = byYear[current];
+  const seriesOf = (k: string) =>
+    years.map((y) => {
+      const v = byYear[y]?.values[k];
+      return typeof v === "number" ? v : null;
+    });
+  const any = ["per_med_cobranza", "dio", "per_med_pago", "ccc"].some((k) => typeof cur?.values[k] === "number");
+  if (!any) return null;
+  const ccc = cur?.values.ccc;
+  const nf = (v: number) => new Intl.NumberFormat("es-EC", { maximumFractionDigits: 0 }).format(v);
+  const tile = (key: string, help: string, big = false) => {
+    const info = ratioInfo(key)!;
+    const v = cur?.values[key];
+    return (
+      <div
+        className={`w-44 rounded-xl border p-3 ${big ? "border-brand bg-brand-soft" : "border-border bg-surface"}`}
+        title={info.formula}
+      >
+        <div className="text-xs font-medium leading-snug">{info.nombre}</div>
+        <div className="mt-1 flex items-center justify-between gap-1">
+          <span className={`font-semibold tabular-nums ${big ? "text-2xl" : "text-lg"}`}>
+            {formatRatioValue(key, typeof v === "number" ? v : null, 1)}
+          </span>
+          <Sparkline values={seriesOf(key)} width={48} height={20} tone={trendTone(seriesOf(key), info.direction)} title={info.nombre} />
+        </div>
+        <div className="mt-1 flex items-center justify-between gap-1">
+          <span className="text-[10.5px] leading-snug text-muted">{help}</span>
+          <Semaforo ratioKey={key} dist={dist[key]} dir={info.direction} width={56} />
+        </div>
+      </div>
+    );
+  };
+  return (
+    <div>
+      <h3 className="text-lg font-semibold">Ciclo de conversión de efectivo (CCC)</h3>
+      <p className="mt-1 text-sm text-muted">
+        Cuánto tiempo permanece el capital atrapado en la operación: lo que se tarda en cobrar y en vender el inventario,
+        menos lo que se tarda en pagar a los proveedores.
+      </p>
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        {tile("per_med_cobranza", CYCLE[0].help)}
+        <span className="text-xl text-muted">+</span>
+        {tile("dio", CYCLE[1].help)}
+        <span className="text-xl text-muted">−</span>
+        {tile("per_med_pago", CYCLE[2].help)}
+        <span className="text-xl text-muted">=</span>
+        {tile("ccc", "Días de capital atrapado en la operación", true)}
+      </div>
+      {typeof ccc === "number" && (
+        <p className="mt-3 text-sm text-muted">
+          {ccc >= 0
+            ? `La empresa necesita financiar ${nf(ccc)} días de operación con capital propio o deuda. Menos días es mejor.`
+            : `Los proveedores financian ${nf(Math.abs(ccc))} días de la operación: la empresa cobra y vende antes de pagar.`}
+        </p>
+      )}
+    </div>
   );
 }

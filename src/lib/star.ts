@@ -158,7 +158,7 @@ export const DIRECTION: Record<string, Direction> = {
   rot_cartera: "higher",
   rot_activo_fijo: "higher",
   rot_ventas: "higher",
-  fortaleza_patrimonial: "higher",
+  capital_trabajo: "higher",
   fcf: "higher",
   fcf_margen: "higher",
   end_activo: "lower",

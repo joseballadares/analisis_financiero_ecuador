@@ -3,6 +3,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { formatMoney, formatPercent } from "@/lib/format";
 import Sparkline from "@/components/Sparkline";
+import { statementDirection, trendTone } from "@/lib/trend";
 
 type Row = { anio: number; data: Record<string, number> };
 type Stmt = "esf" | "eri";
@@ -160,7 +161,7 @@ export default function StatementsView({
                         );
                       })}
                       <td className="px-2 py-1.5 text-center">
-                        <Sparkline values={series} width={64} height={20} title={names[code] ?? code} />
+                        <Sparkline values={series} width={64} height={20} tone={trendTone(series, statementDirection(code))} title={names[code] ?? code} />
                       </td>
                     </tr>
                   );
