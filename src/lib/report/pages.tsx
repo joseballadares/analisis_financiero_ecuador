@@ -245,7 +245,7 @@ function StatementTable({ c, kind, max }: { c: Ctx; kind: "esf" | "eri"; max: nu
         const varp = isNum(cur as number) && isNum(old as number) && (old as number) > 0 ? (cur as number) / (old as number) - 1 : null;
         return (
           <View key={code} wrap={false} style={{ flexDirection: "row", paddingVertical: 2, borderBottomWidth: 0.4, borderBottomColor: COLOR.graySoft, borderTopWidth: code.length === 1 ? 0.75 : 0, borderTopColor: COLOR.gray }}>
-            <T maxLines={1} style={{ width: labelW, paddingLeft: 4 + depth * 7, paddingRight: 3, fontSize: 7, fontFamily: bold ? FONT.sansBold : FONT.sans }}>{c.b.names[code] ?? code}</T>
+            <T style={{ maxLines: 1, width: labelW, paddingLeft: 4 + depth * 7, paddingRight: 3, fontSize: 7, fontFamily: bold ? FONT.sansBold : FONT.sans }}>{c.b.names[code] ?? code}</T>
             {years.map((y) => (
               <T key={y} style={{ width: colW, textAlign: "right", fontSize: 7, paddingRight: 3, fontFamily: bold ? FONT.sansBold : FONT.sans }}>
                 {accounting(byYear.get(y)?.[code])}
