@@ -28,7 +28,8 @@ export default async function Home() {
     getProvinceStats(anio),
     getSectorOverview(anio),
     getTopLevelSectors(),
-    getInteresting(anio).catch(() => null),
+    // Si el cálculo tarda (primera visita tras un despliegue), la portada no espera: usa una muestra del top 500.
+    Promise.race([getInteresting(anio).catch(() => null), new Promise<null>((r) => setTimeout(() => r(null), 3500))]),
   ]);
 
   const tot = (year: number) => {
