@@ -116,6 +116,37 @@ export default function AcercaPage() {
         </ul>
       </Section>
 
+      <Section title="Cómo se eligen las empresas interesantes">
+        <p>
+          La portada y la pestaña <Link href="/ranking?vista=interesantes" className="text-brand hover:underline">Empresas interesantes</Link>{" "}
+          del ranking son una <strong>selección editorial automatizada</strong> para leer sobre empresas y ver su evolución. No es una
+          recomendación de inversión y tiene sesgos que declaramos abajo.
+        </p>
+        <p>
+          <strong>Población:</strong> las 2.000 empresas con más ingresos operacionales del último año. Deben cumplir controles de
+          calidad: ingresos positivos en cada uno de los últimos 5 años, balance NIIF en el último año, patrimonio positivo y de al menos
+          10 % del activo, estar activas, no tener datos parciales y no ser holdings puros (CIIU K642), cuyos ratios no son comparables.
+        </p>
+        <p>Cada empresa recibe una señal cuando está en el 10 % superior de las elegibles en alguno de estos criterios:</p>
+        <ul>
+          <li><strong>Rentabilidad sostenida:</strong> ROE promedio de 3 años (con patrimonio de al menos 15 % del activo y ROE hasta 150 %).</li>
+          <li><strong>Operación eficiente:</strong> margen EBITDA del último año, dentro de su sector (excluye empresas sin depreciación reportada, cuyo EBITDA saldría subestimado).</li>
+          <li><strong>Mejora operativa:</strong> aumento del margen EBITDA desde hace 3 años.</li>
+          <li><strong>Crecimiento sostenido:</strong> crecimiento anual compuesto de ingresos en 5 años, con alza en al menos 3 de los 4 años.</li>
+          <li><strong>Escalada en el ranking:</strong> puestos ganados por ingresos en 5 años.</li>
+          <li><strong>Giro de resultados:</strong> mayor cambio del margen neto en 5 años (al menos 3 puntos), hacia arriba o hacia abajo.</li>
+        </ul>
+        <p>
+          No se usan el flujo de caja libre, el ROIC ni la deuda neta / EBITDA: existen solo desde los años con balance NIIF (2022), son
+          estimados o aproximados y darían tendencias de 3 años con mucho ruido. Se muestran en el perfil de cada empresa.
+        </p>
+        <p>
+          <strong>Sesgos:</strong> exigir 5 años de datos excluye empresas nuevas o que cerraron; el filtro por ingresos favorece a
+          sectores como minería, petróleo y comercio (por eso el margen EBITDA se compara dentro del sector); los cambios extremos
+          suelen revertirse; y el EBITDA es aproximado porque la depreciación reportada puede ser incompleta.
+        </p>
+      </Section>
+
       <Section title="Cómo verificamos los datos">
         <ul>
           <li>

@@ -5,6 +5,7 @@ import FeaturedCard from "@/components/home/FeaturedCard";
 import ShuffleButton from "@/components/home/ShuffleButton";
 import { getLatestRankingYear, getTopLevelSectors } from "@/lib/db";
 import { getProvinceStats, getSectorOverview, getTopHome, type HomeCompany } from "@/lib/queries";
+import { getInteresting, pickFeatured } from "@/lib/interesting";
 import { formatCompactMoney, formatPercent, sentenceCase } from "@/lib/format";
 import { CURRENT_VERSION } from "@/lib/versions";
 
@@ -22,11 +23,12 @@ const pill = "rounded-full border border-border px-3 py-1 transition-colors hove
 
 export default async function Home() {
   const anio = await getLatestRankingYear();
-  const [top, prov, overview, sectors] = await Promise.all([
+  const [top, prov, overview, sectors, pool] = await Promise.all([
     getTopHome(anio),
     getProvinceStats(anio),
     getSectorOverview(anio),
     getTopLevelSectors(),
+    getInteresting(anio).catch(() => null),
   ]);
 
   const tot = (year: number) => {
@@ -48,7 +50,9 @@ export default async function Home() {
     .slice(0, 6);
 
   const top10 = top.slice(0, 10);
-  const featured = sample(top, 8);
+  // Empresas interesantes (señales sobre 5 años); si no hay suficientes, una muestra del top 500.
+  const featured =
+    pool && pool.empresas.length >= 8 ? pickFeatured(pool, 8) : sample(top, 8).map((c) => ({ ...c, signals: undefined }));
   const tickerItems = sample(top, 24);
 
   const kpis: { label: string; value: string; delta: number | null }[] = [
@@ -146,16 +150,22 @@ export default async function Home() {
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight">Empresas destacadas</h2>
-            <p className="mt-1 text-sm text-muted">
-              Una selección al azar entre las 500 empresas con más ingresos de {anio}, con sus indicadores del último año.
+            <h2 className="text-2xl font-semibold tracking-tight">Empresas interesantes</h2>
+            <p className="mt-1 max-w-2xl text-sm text-muted">
+              Historias para leer y seguir en el tiempo: empresas que destacan por crecer, rendir, mejorar o cambiar en los últimos
+              5 años. Selección editorial automatizada, no una recomendación de inversión.
             </p>
           </div>
-          <ShuffleButton />
+          <div className="flex flex-wrap items-center gap-2">
+            <ShuffleButton />
+            <Link href="/ranking?vista=interesantes" className="text-sm text-brand hover:underline">
+              Ver la lista completa →
+            </Link>
+          </div>
         </div>
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {featured.map((c) => (
-            <FeaturedCard key={c.ruc} c={c} sector={c.sector ? names.get(c.sector) : undefined} year={anio} />
+            <FeaturedCard key={c.ruc} c={c} sector={c.sector ? names.get(c.sector) : undefined} />
           ))}
         </div>
       </section>

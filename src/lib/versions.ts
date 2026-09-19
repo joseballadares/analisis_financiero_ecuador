@@ -4,6 +4,16 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const RELEASES: Release[] = [
   {
+    version: "0.15",
+    date: "2026-09-18",
+    title: "Empresas interesantes",
+    changes: [
+      "Las tarjetas de la portada pasan a ser empresas interesantes: seis señales sobre los últimos 5 años (rentabilidad sostenida, operación eficiente, mejora operativa, crecimiento sostenido, escalada en el ranking y giro de resultados), cada una con la razón que la destaca.",
+      "Nueva pestaña Empresas interesantes en el ranking, con la lista completa, filtros por señal, sector y nombre, y columnas ordenables.",
+      "La metodología explica población, controles de calidad, criterios y sesgos.",
+    ],
+  },
+  {
     version: "0.14",
     date: "2026-09-18",
     title: "Ranking por ingresos con filtros",
