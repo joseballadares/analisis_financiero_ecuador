@@ -8,6 +8,8 @@ import { getProvinceStats, getSectorOverview, getTopHome, type HomeCompany } fro
 import { peekInteresting, pickFeatured } from "@/lib/interesting";
 import { formatCompactMoney, formatPercent, sentenceCase } from "@/lib/format";
 import { CURRENT_VERSION } from "@/lib/versions";
+import { PEPE_NAME, PEPE_SLUG } from "@/lib/eggs";
+import BirthdayStrip from "@/components/eggs/BirthdayStrip";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +18,24 @@ function sample<T>(items: T[], n: number): T[] {
   const a = [...items];
   const out: T[] = [];
   while (out.length < n && a.length > 0) out.push(a.splice(Math.floor(Math.random() * a.length), 1)[0]);
+  return out;
+}
+
+// Sorpresa: 1 de cada 100 cargas se cuela una tarjeta ficticia entre las empresas reales de la cinta.
+function withPepe(items: HomeCompany[]): HomeCompany[] {
+  if (Math.random() >= 0.01) return items;
+  const out = [...items];
+  out.splice(Math.floor(Math.random() * (out.length + 1)), 0, {
+    ruc: PEPE_SLUG,
+    nombre: PEPE_NAME,
+    rank: 0,
+    sector: null,
+    ingresos: 1_000_000_000,
+    activos: null,
+    utilidad: null,
+    margen: 10,
+    roe: 10,
+  });
   return out;
 }
 
@@ -54,7 +74,7 @@ export default async function Home() {
   // Radar Estratégico (señales sobre 5 años); si no hay suficientes, una muestra del top 500.
   const featured =
     pool && pool.empresas.length >= 8 ? pickFeatured(pool, 8) : sample(top, 8).map((c) => ({ ...c, signals: undefined }));
-  const tickerItems = sample(top, 24);
+  const tickerItems = withPepe(sample(top, 24));
 
   const kpis: { label: string; value: string; delta: number | null }[] = [
     { label: "Empresas registradas", value: cur.empresas.toLocaleString("es-EC"), delta: growth(cur.empresas, prev.empresas) },
@@ -65,6 +85,7 @@ export default async function Home() {
 
   return (
     <div>
+      <BirthdayStrip />
       <Ticker items={tickerItems} year={anio} />
 
       <section className="mx-auto grid max-w-6xl gap-10 px-4 pb-10 pt-14 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">

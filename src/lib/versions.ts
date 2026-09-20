@@ -4,6 +4,15 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const RELEASES: Release[] = [
   {
+    version: "0.23",
+    date: "2026-09-19",
+    title: "Página 404 nueva y algunas sorpresas",
+    changes: [
+      "Nueva página 404 con la ecuación contable que no cuadra.",
+      "Escondimos algunas sorpresas por el sitio. ¿Las encuentras?",
+    ],
+  },
+  {
     version: "0.22",
     date: "2026-09-19",
     title: "Ratios por grupo y nuevos indicadores",

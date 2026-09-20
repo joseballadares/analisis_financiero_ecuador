@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { HomeCompany } from "@/lib/queries";
+import { PEPE_SLUG } from "@/lib/eggs";
 import { formatCompactMoney, formatPercent } from "@/lib/format";
 
 function Delta({ label, value }: { label: string; value: number | null }) {
@@ -24,6 +25,11 @@ function Item({ c }: { c: HomeCompany }) {
       <span className="whitespace-nowrap font-semibold">
         {c.nombre}
       </span>
+      {c.ruc === PEPE_SLUG && (
+        <span className="whitespace-nowrap rounded-full bg-brand-soft px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand">
+          🐸 ficticia
+        </span>
+      )}
       <span className="inline-flex items-center gap-1 whitespace-nowrap">
         <span className="text-muted">Ingresos</span>
         <span className="font-medium tabular-nums">{formatCompactMoney(c.ingresos)}</span>

@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { CURRENT_VERSION } from "@/lib/versions";
 import ThemeToggle from "@/components/ThemeToggle";
+import EasterEggs from "@/components/eggs/EasterEggs";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -78,6 +79,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </Link>
           </div>
         </footer>
+        <EasterEggs />
       </body>
     </html>
   );

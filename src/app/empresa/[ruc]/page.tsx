@@ -16,6 +16,9 @@ import RiskTab from "@/components/RiskTab";
 import Tabs from "@/components/Tabs";
 import SearchBox from "@/components/SearchBox";
 import YearSelect from "@/components/YearSelect";
+import { PEPE_SLUG } from "@/lib/eggs";
+import PepeHoldingProfile from "@/components/eggs/PepeHoldingProfile";
+import SectorModeKeys from "@/components/eggs/SectorModeKeys";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +31,9 @@ export default async function EmpresaPage({
 }) {
   const { ruc } = await params;
   const { anio: anioParam } = await searchParams;
+
+  // Perfil ficticio escondido (sorpresa): no consulta la base de datos.
+  if (ruc === PEPE_SLUG) return <PepeHoldingProfile />;
 
   const loaded = await loadCompanyBundle(ruc, anioParam);
   if (loaded.kind === "notfound") notFound();
@@ -101,6 +107,7 @@ export default async function EmpresaPage({
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10">
+      <SectorModeKeys ciiu={current.ciiu_n6} />
       <div className="mb-8 max-w-xl">
         <SearchBox compact />
       </div>

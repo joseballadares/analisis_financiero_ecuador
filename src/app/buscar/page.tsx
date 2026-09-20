@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getLatestRankingYear, getTopLevelSectors } from "@/lib/db";
 import { getProvinces, searchCompaniesAdvanced } from "@/lib/queries";
 import { formatMoney, segmentName, titleCase } from "@/lib/format";
+import TurtleEgg from "@/components/eggs/TurtleEgg";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +56,7 @@ export default async function BuscarPage({ searchParams }: { searchParams: Promi
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10">
+      <TurtleEgg provincia={sp.provincia} />
       <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Buscar empresas</h1>
       <p className="mt-2 text-muted">
         Filtra por provincia, tamaño, sector o actividad (CIIU). Solo aparecen las empresas con datos

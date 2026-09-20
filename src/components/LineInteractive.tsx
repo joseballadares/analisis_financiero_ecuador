@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { Events, XLabels, regression, type ChartEvent } from "@/components/charts";
 import { fmtDelta, fmtFull, fmtShort, fmtTick, isNum, lineScale, type Unit } from "@/lib/chartMath";
+import { SectorGlyph } from "@/components/eggs/SectorIcons";
+import { useSectorMode } from "@/components/eggs/sectorMode";
 
 export type { Unit };
 
@@ -26,6 +28,7 @@ export default function LineInteractive({
   events?: ChartEvent[];
   trend?: boolean;
 }) {
+  const sectorMode = useSectorMode();
   const boxRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -184,7 +187,11 @@ export default function LineInteractive({
                     )}
                     <path d={d} fill="none" strokeWidth="2.25" strokeLinejoin="round" strokeLinecap="round" style={{ stroke: s.color }} />
                     {s.values.map((v, i) =>
-                      isNum(v) ? (
+                      isNum(v) && sectorMode ? (
+                        <g key={i} transform={`translate(${x(i).toFixed(1)} ${y(v).toFixed(1)}) scale(${hover === i ? 0.95 : 0.72}) translate(-12 -12)`}>
+                          <SectorGlyph kind={sectorMode} />
+                        </g>
+                      ) : isNum(v) ? (
                         <circle
                           key={i}
                           cx={x(i)}

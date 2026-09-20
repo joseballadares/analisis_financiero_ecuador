@@ -132,3 +132,420 @@ body {
     overflow-x: auto;
   }
 }
+
+/* ───────────── Sorpresas escondidas ───────────── */
+:root {
+  --nf-outer: #c2def0;
+  --nf-bar: #0a5cff;
+  --nf-ink: #16233f;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --nf-outer: #122a44;
+    --nf-bar: #2b6fe0;
+    --nf-ink: #e7ebf0;
+  }
+}
+:root[data-theme="dark"] {
+  --nf-outer: #122a44;
+  --nf-bar: #2b6fe0;
+  --nf-ink: #e7ebf0;
+}
+
+/* Lluvia de billetes y confeti */
+@keyframes egg-fall {
+  from {
+    transform: translate3d(0, -14vh, 0) rotate(0deg);
+  }
+  to {
+    transform: translate3d(var(--sway, 0px), 114vh, 0) rotate(var(--rot, 360deg));
+  }
+}
+.egg-bill {
+  position: fixed;
+  top: 0;
+  z-index: 70;
+  pointer-events: none;
+  animation-name: egg-fall;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+
+/* Pepe sube desde abajo */
+@keyframes egg-rise {
+  0% {
+    transform: translate(-50%, 105%);
+  }
+  14% {
+    transform: translate(-50%, 0);
+  }
+  86% {
+    transform: translate(-50%, 0);
+  }
+  100% {
+    transform: translate(-50%, 105%);
+  }
+}
+.egg-rise {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  z-index: 71;
+  pointer-events: none;
+  animation: egg-rise 4s ease-in-out forwards;
+}
+
+/* Animaciones de sectores */
+.egg-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
+  overflow: hidden;
+}
+@keyframes egg-drop {
+  0% {
+    transform: translateY(-160px) rotate(-12deg);
+    opacity: 1;
+  }
+  38% {
+    transform: translateY(calc(100vh - 170px)) rotate(8deg);
+  }
+  52% {
+    transform: translateY(calc(100vh - 300px)) rotate(-4deg);
+  }
+  66% {
+    transform: translateY(calc(100vh - 170px)) rotate(0deg);
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(calc(100vh - 170px));
+    opacity: 0;
+  }
+}
+.egg-drop {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  margin-left: -48px;
+  animation: egg-drop 3.2s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+}
+@keyframes egg-fall-once {
+  0% {
+    transform: translateY(-160px);
+    opacity: 1;
+  }
+  44% {
+    transform: translateY(calc(100vh - 170px));
+    opacity: 1;
+  }
+  46% {
+    transform: translateY(calc(100vh - 170px));
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.egg-oil {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  margin-left: -48px;
+  animation: egg-fall-once 3.2s ease-in forwards;
+}
+@keyframes egg-splash {
+  0% {
+    transform: scale(0.2);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+.egg-splash {
+  position: absolute;
+  bottom: 44px;
+  left: 50%;
+  width: 140px;
+  height: 26px;
+  margin-left: -70px;
+  border-radius: 50%;
+  border: 3px solid #1b1d22;
+  opacity: 0;
+  animation: egg-splash 1.1s ease-out 1.42s forwards;
+}
+@keyframes egg-note-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.egg-note {
+  position: absolute;
+  left: 50%;
+  bottom: 96px;
+  transform: translateX(-50%);
+  opacity: 0;
+  animation: egg-note-in 0.5s ease-out 1.6s forwards;
+}
+@keyframes egg-x {
+  from {
+    transform: translateX(-140px);
+  }
+  to {
+    transform: translateX(calc(100vw + 40px));
+  }
+}
+@keyframes egg-hop {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-14deg);
+  }
+  50% {
+    transform: translateY(-34vh) rotate(16deg);
+  }
+}
+.egg-hop-x {
+  position: absolute;
+  bottom: 10vh;
+  left: 0;
+  animation: egg-x 3.2s linear forwards;
+}
+.egg-hop-y {
+  animation: egg-hop 1.066s ease-in-out 3;
+}
+@keyframes egg-half-l {
+  0%,
+  22% {
+    transform: translateX(0) rotate(0deg);
+  }
+  100% {
+    transform: translateX(-24px) rotate(-9deg);
+  }
+}
+@keyframes egg-half-r {
+  0%,
+  22% {
+    transform: translateX(0) rotate(0deg);
+  }
+  100% {
+    transform: translateX(24px) rotate(9deg);
+  }
+}
+@keyframes egg-bean {
+  0%,
+  30% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes egg-cacao {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  15% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.egg-cacao {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: -90px 0 0 -90px;
+  animation: egg-cacao 3.2s ease-out forwards;
+}
+.egg-half-l,
+.egg-half-r,
+.egg-bean {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.egg-half-l {
+  animation: egg-half-l 1.2s ease-out forwards;
+}
+.egg-half-r {
+  animation: egg-half-r 1.2s ease-out forwards;
+}
+.egg-bean {
+  animation: egg-bean 1.4s cubic-bezier(0.3, 1.6, 0.5, 1) forwards;
+}
+@keyframes egg-twinkle {
+  from {
+    opacity: 0.1;
+    transform: scale(0.5) rotate(0deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.2) rotate(45deg);
+  }
+}
+.egg-spark {
+  position: absolute;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: egg-twinkle 0.35s ease-in-out 1.3s 5 alternate forwards;
+}
+
+/* Avisos globales */
+@keyframes egg-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.egg-toast {
+  animation: egg-toast-in 0.4s ease-out;
+}
+
+/* Tortuga de Galápagos */
+@keyframes egg-turtle-x {
+  from {
+    transform: translateX(-220px);
+  }
+  to {
+    transform: translateX(calc(100vw + 40px));
+  }
+}
+@keyframes egg-turtle-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+@keyframes egg-leg {
+  0%,
+  100% {
+    transform: rotate(-14deg);
+  }
+  50% {
+    transform: rotate(14deg);
+  }
+}
+.egg-turtle-x {
+  position: fixed;
+  bottom: 22vh;
+  left: 0;
+  z-index: 60;
+  pointer-events: none;
+  animation: egg-turtle-x 8s linear forwards;
+}
+.egg-turtle-bob {
+  animation: egg-turtle-bob 1.1s ease-in-out infinite;
+}
+.egg-leg {
+  transform-box: fill-box;
+  transform-origin: 50% 0%;
+  animation: egg-leg 1.1s ease-in-out infinite;
+}
+.egg-leg-b {
+  animation-delay: -0.55s;
+}
+
+/* Página de dolarización */
+@keyframes egg-shake {
+  0%,
+  100% {
+    transform: none;
+  }
+  20% {
+    transform: translate(-6px, 3px);
+  }
+  40% {
+    transform: translate(6px, -3px);
+  }
+  60% {
+    transform: translate(-4px, 2px);
+  }
+  80% {
+    transform: translate(4px, -2px);
+  }
+}
+@keyframes egg-flash {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.egg-shake {
+  animation: egg-shake 0.55s;
+}
+.egg-flash {
+  animation: egg-flash 1s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .egg-bill {
+    display: none;
+  }
+  .egg-rise {
+    animation: none;
+    transform: translate(-50%, 0);
+  }
+  .egg-drop,
+  .egg-oil {
+    animation: none;
+    transform: translateY(35vh);
+  }
+  .egg-hop-x {
+    animation: none;
+    transform: translateX(45vw);
+  }
+  .egg-hop-y,
+  .egg-half-l,
+  .egg-half-r,
+  .egg-bean,
+  .egg-cacao,
+  .egg-splash,
+  .egg-turtle-bob,
+  .egg-leg,
+  .egg-toast,
+  .egg-shake,
+  .egg-flash {
+    animation: none;
+  }
+  .egg-half-l {
+    transform: translateX(-24px);
+  }
+  .egg-half-r {
+    transform: translateX(24px);
+  }
+  .egg-note,
+  .egg-spark {
+    animation: none;
+    opacity: 1;
+  }
+  .egg-turtle-x {
+    animation: none;
+    transform: translateX(45vw);
+  }
+}
