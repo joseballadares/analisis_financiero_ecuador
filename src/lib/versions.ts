@@ -4,6 +4,15 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const RELEASES: Release[] = [
   {
+    version: "0.18",
+    date: "2026-09-19",
+    title: "Ratios en dos secciones",
+    changes: [
+      "La pestaña de ratios financieros se divide en dos secciones con un selector al inicio: Ratios estrella y Ratios por año.",
+      "Ratios por año abre con la tabla por años; las tarjetas por grupo siguen disponibles con un botón.",
+    ],
+  },
+  {
     version: "0.17",
     date: "2026-09-19",
     title: "Resumen del perfil rediseñado",

@@ -6,6 +6,7 @@ import CompanyFicha, { type Fact } from "@/components/CompanyFicha";
 import RatiosTable from "@/components/RatiosTable";
 import RatiosCards from "@/components/RatiosCards";
 import ViewToggle from "@/components/ViewToggle";
+import RatiosSections from "@/components/RatiosSections";
 import StarRatios from "@/components/StarRatios";
 import BalanceSheetView from "@/components/BalanceSheetView";
 import PeersTab from "@/components/PeersTab";
@@ -169,10 +170,12 @@ export default async function EmpresaPage({
                     No hay ratios significativos: la empresa no reporta actividad operativa ni activos relevantes.
                   </p>
                 ) : (
+                  <RatiosSections
+                    estrella={!inactive ? <StarRatios years={tableYears} byYear={byYear} dist={dist} /> : undefined}
+                    porAnio={
                   <div className="space-y-10">
-                    {!inactive && <StarRatios years={tableYears} byYear={byYear} dist={dist} />}
                     <div>
-                      <h3 className="text-lg font-semibold">Todos los indicadores</h3>
+                      <h3 className="text-lg font-semibold">Ratios por año</h3>
                       {peerGroup && !inactive && (
                         <p className="mt-1 text-sm text-muted">
                           La referencia (semáforo) es la posición entre las {peerGroup.benchmark.n.toLocaleString("es-EC")}{" "}
@@ -238,6 +241,8 @@ export default async function EmpresaPage({
                       />
                     )}
                   </div>
+                    }
+                  />
                 ),
             },
             ...(inactive
