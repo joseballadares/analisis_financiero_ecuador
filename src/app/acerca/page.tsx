@@ -80,10 +80,15 @@ export default function AcercaPage() {
 
       <Section title="Fuente de los datos">
         <p>
-          Todo proviene de la <strong>Superintendencia de Compañías, Valores y Seguros (SCVS)</strong>: el
+          Las cifras financieras provienen de la <strong>Superintendencia de Compañías, Valores y Seguros (SCVS)</strong>: el
           registro de compañías y su clasificación por tamaño y actividad (CIIU), el ranking anual de empresas con
           sus indicadores (2008–2025) y los <strong>estados financieros línea por línea</strong> (2019–2025). No
           usamos información de terceros para las cifras de cada empresa.
+        </p>
+        <p>
+          Los datos del RUC (fecha de inicio de actividades, estado del contribuyente, establecimientos y ubicación de la matriz)
+          vienen del <strong>catastro público del SRI</strong>, publicado como datos abiertos por provincia. Ese catastro no incluye
+          datos de personas ni el representante legal, y la fecha de inicio de actividades puede diferir de la fecha de fundación.
         </p>
         <p>
           La cobertura son unas 150.000 empresas con datos del último año. Las compañías que no presentaron
@@ -231,7 +236,7 @@ export default function AcercaPage() {
             Los ratios operacionales dependen de que la empresa declare bien su costo de ventas y sus gastos.
           </li>
           <li>
-            Las cifras de cada empresa no incorporan información macroeconómica, de contratación pública ni datos del contribuyente del SRI (por ahora).
+            Las cifras financieras de cada empresa no incorporan información macroeconómica ni de contratación pública (por ahora).
           </li>
         </ul>
       </Section>
@@ -256,7 +261,7 @@ export default function AcercaPage() {
             rel="noopener noreferrer"
             className="italic text-foreground no-underline hover:underline hover:decoration-dotted"
           >
-            It&apos;s just money.
+            It&apos;s just money. It&apos;s made up.
           </a>
         </p>
       </Section>

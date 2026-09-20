@@ -16,7 +16,11 @@ import RiskTab from "@/components/RiskTab";
 import Tabs from "@/components/Tabs";
 import SearchBox from "@/components/SearchBox";
 import YearSelect from "@/components/YearSelect";
-import { PEPE_SLUG } from "@/lib/eggs";
+import { PEPE_SLUG, norm } from "@/lib/eggs";
+import GalapagosArt from "@/components/eggs/GalapagosArt";
+import CatastroChips from "@/components/CatastroChips";
+import { getCatastro } from "@/lib/catastro";
+import { getAntiquityReport, isOldActive, shareYoungerThan } from "@/lib/antiquity";
 import PepeHoldingProfile from "@/components/eggs/PepeHoldingProfile";
 import SectorModeKeys from "@/components/eggs/SectorModeKeys";
 
@@ -73,6 +77,15 @@ export default async function EmpresaPage({
     flags,
   } = loaded.bundle;
   const alertCount = flags.filter((f) => f.severity !== "info").length;
+  const isGalapagos = norm(company.provincia ?? "") === "galapagos";
+  // Datos del RUC (catastro del SRI) y, si la empresa es de las más antiguas y vigentes, la opción especial. El informe de antigüedad
+  // se calcula en segundo plano: si tarda más de 1,5 s, el chip se muestra en su forma normal.
+  const catastro = company.ruc ? await getCatastro(company.ruc) : null;
+  const antiquity = catastro?.fecha_inicio
+    ? await Promise.race([getAntiquityReport(current.anio).catch(() => null), new Promise<null>((res) => setTimeout(() => res(null), 1500))])
+    : null;
+  const oldInfo = isOldActive(antiquity, company.ruc ?? "");
+  const younger = antiquity && catastro?.fecha_inicio && oldInfo ? shareYoungerThan(antiquity.quantiles, catastro.fecha_inicio) : null;
   const rankNow = current.posicion_general;
   const actividad = current.ciiu_n6 ? `${current.ciiu_n6}${ciiuDesc ? ` · ${sentenceCase(ciiuDesc)}` : ""}` : "—";
   const facts: Fact[] = [
@@ -145,6 +158,8 @@ export default async function EmpresaPage({
               id: "resumen",
               label: "Resumen",
               content: (
+                <>
+                {catastro && <CatastroChips c={catastro} old={oldInfo} younger={younger} />}
                 <ResumenTab
                   financials={filled}
                   byYear={byYear}
@@ -168,6 +183,8 @@ export default async function EmpresaPage({
                     ) : null
                   }
                 />
+                {isGalapagos && <GalapagosArt />}
+              </>
               ),
             },
             {

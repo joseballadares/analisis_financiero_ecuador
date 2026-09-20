@@ -23,7 +23,7 @@ export default function SiteFooter() {
             Ecuador Financiero
           </Link>
           <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted">
-            Datos financieros de empresas ecuatorianas. Fuente: Superintendencia de Compañías, Valores y Seguros del Ecuador — 2008–2025.
+            Datos financieros de empresas ecuatorianas. Fuentes: Superintendencia de Compañías, Valores y Seguros (2008–2025) y catastro público del SRI.
           </p>
           <p className="mt-2 max-w-sm text-xs leading-relaxed text-muted">
             Proyecto independiente, sin afiliación oficial. Solo informativo: no ofrece consejos de inversión ni asesoría financiera.
@@ -62,7 +62,7 @@ export default function SiteFooter() {
       </div>
 
       <div className="mx-auto max-w-6xl border-t border-border px-4 py-4 text-xs text-muted sm:px-6">
-        © {new Date().getFullYear()} Ecuador Financiero · Datos públicos de la Superintendencia de Compañías, Valores y Seguros ·{" "}
+        © {new Date().getFullYear()} Ecuador Financiero · Datos públicos de la Superintendencia de Compañías, Valores y Seguros y del SRI ·{" "}
         <span className="group relative inline-block">
           <Link href="/versiones" className="underline hover:text-foreground">
             v{CURRENT_VERSION.version}

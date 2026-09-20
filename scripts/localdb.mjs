@@ -57,6 +57,26 @@ export async function startLocalDb() {
       await client.query("ANALYZE");
     }
   }
+  // Catastro del SRI: migración posterior a la carga inicial (se aplica y se carga una sola vez).
+  {
+    const t = await client.query("SELECT to_regclass('public.ruc_catastro') AS t");
+    if (!t.rows[0].t) {
+      const mig = path.join(ROOT, "netlify", "database", "migrations", "20260920120000_ruc_catastro", "migration.sql");
+      if (fs.existsSync(mig)) {
+        await client.query(fs.readFileSync(mig, "utf-8"));
+        const candidates = [path.join(DIR, "seed", "ruc_catastro.tsv"), "C:/dev/afe-processed/ruc_catastro.tsv"];
+        const file = candidates.find((f) => fs.existsSync(f));
+        if (file) {
+          const t0 = Date.now();
+          await client.query(
+            `COPY ruc_catastro (ruc, estado, clase, tipo, fecha_inicio, fecha_suspension, fecha_reinicio, fecha_actualizacion, obligado, agente_retencion, especial, n_establecimientos, n_abiertos, n_provincias, provincia_est, canton_est, parroquia_est, ciiu_sri, nombre_comercial) FROM '${file.split(String.fromCharCode(92)).join("/")}'`,
+          );
+          const n = (await client.query("SELECT count(*)::int AS n FROM ruc_catastro")).rows[0].n;
+          console.log(`  ruc_catastro: ${n} filas (${Math.round((Date.now() - t0) / 1000)} s)`);
+        }
+      }
+    }
+  }
   await client.end();
   return server;
 }

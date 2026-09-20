@@ -4,6 +4,15 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const RELEASES: Release[] = [
   {
+    version: "0.26",
+    date: "2026-09-20",
+    title: "Datos del RUC en cada perfil",
+    changes: [
+      "Al inicio del Resumen de cada empresa, datos del catastro público del SRI: inicio de actividades y años de trayectoria, estado del RUC, establecimientos, ubicación de la matriz y obligaciones (contabilidad, contribuyente especial, agente de retención).",
+      "Más sorpresas escondidas por el sitio. ¿Las encuentras?",
+    ],
+  },
+  {
     version: "0.25",
     date: "2026-09-20",
     title: "Nuevo pie de página y página Acerca de ampliada",
