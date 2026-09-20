@@ -11,6 +11,7 @@ const COLS = [
   "ruc", "estado", "clase", "tipo", "fecha_inicio", "fecha_suspension", "fecha_reinicio", "fecha_actualizacion", "obligado", "agente_retencion",
   "especial", "n_establecimientos", "n_abiertos", "n_provincias", "provincia_est", "canton_est", "parroquia_est", "ciiu_sri", "nombre_comercial",
 ];
+const NULL_TOKEN = String.fromCharCode(92) + "N"; // marca de nulo del formato COPY de Postgres
 const DATES = new Set(["fecha_inicio", "fecha_suspension", "fecha_reinicio", "fecha_actualizacion"]);
 const INTS = new Set(["n_establecimientos", "n_abiertos", "n_provincias"]);
 
@@ -32,6 +33,14 @@ async function ensureTable() {
 
 export async function POST(req: NextRequest) {
   if (!authorized(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  try {
+    return await load(req);
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
+  }
+}
+
+async function load(req: NextRequest) {
   const part = (req.nextUrl.searchParams.get("part") ?? "").padStart(2, "0");
   const text = await getStore({ name: "afe-seed" }).get(`ruc_catastro_${part}.tsv`, { type: "text" });
   if (!text) return NextResponse.json({ error: `parte ${part} no encontrada` }, { status: 404 });
@@ -52,7 +61,7 @@ export async function POST(req: NextRequest) {
   const BATCH = 4000;
   for (let i = 0; i < rows.length; i += BATCH) {
     const chunk = rows.slice(i, i + BATCH);
-    const params = COLS.map((_, c) => chunk.map((r) => (r[c] === undefined || r[c] === "\N" ? "" : r[c])));
+    const params = COLS.map((_, c) => chunk.map((r) => (r[c] === undefined || r[c] === NULL_TOKEN ? "" : r[c])));
     const res = await db().pool.query(sql, params);
     inserted += res.rowCount ?? 0;
   }
