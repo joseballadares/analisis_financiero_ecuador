@@ -162,6 +162,35 @@ export default async function EmpresaPage({
               ),
             },
             {
+              id: "estados",
+              label: "Estados financieros",
+              content:
+                balanceRows.length === 0 ? (
+                  <p className="text-sm text-muted">
+                    El detalle línea por línea del balance está disponible desde el año 2019.
+                  </p>
+                ) : (
+                  <StatementsView
+                    rows={niifRows}
+                    names={names}
+                    csvHref={`/api/empresa/${company.ruc}/estados`}
+                    sriYears={sriYears}
+                    detailYear={current.anio}
+                    detail={
+                      balanceSheet ? (
+                        <BalanceSheetView
+                          data={balanceSheet.data}
+                          names={balanceSheet.names}
+                          catalogId={balanceSheet.catalog_id}
+                        />
+                      ) : (
+                        <p className="text-sm text-muted">No hay detalle de cuentas para {current.anio}.</p>
+                      )
+                    }
+                  />
+                ),
+            },
+            {
               id: "ratios",
               label: "Ratios financieros",
               content:
@@ -263,35 +292,6 @@ export default async function EmpresaPage({
                     ),
                   },
                 ]),
-            {
-              id: "estados",
-              label: "Estados financieros",
-              content:
-                balanceRows.length === 0 ? (
-                  <p className="text-sm text-muted">
-                    El detalle línea por línea del balance está disponible desde el año 2019.
-                  </p>
-                ) : (
-                  <StatementsView
-                    rows={niifRows}
-                    names={names}
-                    csvHref={`/api/empresa/${company.ruc}/estados`}
-                    sriYears={sriYears}
-                    detailYear={current.anio}
-                    detail={
-                      balanceSheet ? (
-                        <BalanceSheetView
-                          data={balanceSheet.data}
-                          names={balanceSheet.names}
-                          catalogId={balanceSheet.catalog_id}
-                        />
-                      ) : (
-                        <p className="text-sm text-muted">No hay detalle de cuentas para {current.anio}.</p>
-                      )
-                    }
-                  />
-                ),
-            },
           ]}
         />
       </div>

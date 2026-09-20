@@ -10,6 +10,7 @@ export const RELEASES: Release[] = [
     changes: [
       "La pestaña de ratios financieros se divide en dos secciones con un selector al inicio: Ratios estrella y Ratios por año.",
       "Ratios por año abre con la tabla por años; las tarjetas por grupo siguen disponibles con un botón.",
+      "Las pestañas del perfil quedan en este orden: Resumen, Estados financieros, Ratios financieros y Alertas y crédito.",
     ],
   },
   {
