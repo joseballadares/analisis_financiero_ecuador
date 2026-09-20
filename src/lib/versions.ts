@@ -4,6 +4,15 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const RELEASES: Release[] = [
   {
+    version: "0.27",
+    date: "2026-09-20",
+    title: "Más rápido y liviano",
+    changes: [
+      "La portada, la lista de sectores, las provincias y la descarga de estados financieros se guardan en memoria para cargar al instante en visitas repetidas.",
+      "Agregamos robots.txt y un mapa del sitio (sitemap) para que los buscadores encuentren lo principal.",
+    ],
+  },
+  {
     version: "0.26",
     date: "2026-09-20",
     title: "Datos del RUC en cada perfil",

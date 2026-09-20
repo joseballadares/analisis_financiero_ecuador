@@ -1,8 +1,14 @@
 import { getDatabase } from "@netlify/database";
 import { MIN_ACTIVE_REVENUE } from "@/lib/derived";
 
+// Con el driver `pg` (base local) cada getDatabase() abre un pool nuevo que nunca se cierra y agota las 100
+// conexiones de Postgres tras unas pocas paginas; se reutiliza uno solo. Con el driver serverless de Netlify
+// (produccion) se mantiene el comportamiento original.
+let localDb: ReturnType<typeof getDatabase> | undefined;
+
 export function db() {
-  return getDatabase();
+  if (process.env.NETLIFY_DB_DRIVER === "serverless") return getDatabase();
+  return (localDb ??= getDatabase());
 }
 
 export type Metrics = Record<string, number | null>;

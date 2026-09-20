@@ -1,12 +1,17 @@
 {
   "name": "analisis-financiero-ecuador",
-  "version": "0.26.0",
+  "version": "0.27.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "smoke": "node scripts/smoke.mjs",
+    "sitemap": "node scripts/make-sitemap.mjs",
+    "check:rapido": "npm run lint && npm run typecheck",
+    "check": "npm run lint && npm run typecheck && npm run build && npm run smoke",
     "dev:local": "node scripts/dev-local.mjs",
     "db:local": "node scripts/localdb.mjs",
     "db:seed": "python scripts/make-local-seed.py"
