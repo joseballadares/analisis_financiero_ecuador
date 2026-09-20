@@ -86,9 +86,10 @@ export default function ResumenTab({
   const barCats = barYears.map(String);
   const barAct = barRows.map((f) => num(f.metrics.activos));
   const barPas = barRows.map((f) => (num(f.metrics.activos) !== null && num(f.metrics.patrimonio) !== null ? (f.metrics.activos as number) - (f.metrics.patrimonio as number) : null));
-  const barCash = barYears.map((y) => (typeof cashByYear[y] === "number" ? cashByYear[y] : null));
+  const barPat = barRows.map((f) => num(f.metrics.patrimonio));
   const barIng = barRows.map((f) => num(f.metrics.ingresos_ventas));
   const barUti = barRows.map((f) => num(f.metrics.utilidad_neta));
+  const rotation = num(byYear[currentYear]?.values.rot_ventas);
 
   // Ingresos vs utilidad neta
   const ingS = met("ingresos_ventas");
@@ -238,13 +239,13 @@ export default function ResumenTab({
           <VerticalEquations year={currentYear} a={amounts} />
           {barYears.length >= 2 && (
             <div className="grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
-              <Card title="Activos, pasivos y efectivo" sub="Cuánto tiene, cuánto debe y cuánto tiene en caja, por año">
+              <Card title="Activos, pasivos y patrimonio" sub="Cuánto tiene, cuánto debe y cuánto es de los dueños, por año">
                 <BarsInteractive
                   categories={barCats}
                   series={[
                     { name: "Activos", color: C.blue, values: barAct },
                     { name: "Pasivos", color: C.gray, values: barPas },
-                    { name: "Efectivo", color: C.blueSoft, values: barCash },
+                    { name: "Patrimonio", color: "color-mix(in srgb, var(--chart-blue) 50%, var(--surface))", values: barPat },
                   ]}
                 />
               </Card>
@@ -260,7 +261,25 @@ export default function ResumenTab({
             </div>
           )}
           <div className="grid items-start gap-4 sm:grid-cols-2 [&>*]:min-w-0">
-            <RankCard ranks={ranks} universe={universe} />
+            <div className="space-y-4">
+              <RankCard ranks={ranks} universe={universe} />
+              {barYears.length >= 2 && (
+                <Card
+                  title="Ingresos vs activos"
+                  sub="Cuánto vende frente a lo que posee, por año"
+                  latest={rotation !== null ? `${formatNumber(rotation, 2)} veces · ${currentYear}` : undefined}
+                >
+                  <BarsInteractive
+                    categories={barCats}
+                    series={[
+                      { name: "Ingresos", color: C.gray, values: barIng },
+                      { name: "Activos", color: C.blue, values: barAct },
+                    ]}
+                  />
+                  <p className="mt-1 text-[11px] text-muted">La cifra de arriba es la rotación de activos: ingresos ÷ activos.</p>
+                </Card>
+              )}
+            </div>
             {segment}
           </div>
         </div>
