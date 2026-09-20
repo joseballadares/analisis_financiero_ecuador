@@ -150,7 +150,7 @@ async function compute(anio: number): Promise<InterestingPool> {
     // Puestos ganados en el ranking general de la Superintendencia
     const r0 = posOf.get(`${c.expediente}:${desde}`);
     const r1 = posOf.get(`${c.expediente}:${anio}`);
-    if (r0 && r1 && r0 - r1 > 0) lists.escalada.push({ co: c, value: r0 - r1, detail: `Subió ${formatNumber(r0 - r1, 0)} puestos en el ranking de la Superintendencia desde ${desde} (del ${formatNumber(r0, 0)} al ${formatNumber(r1, 0)})`, tone: "up" });
+    if (r0 && r1 && r0 - r1 > 0) lists.escalada.push({ co: c, value: r0 - r1, detail: `Subió ${formatNumber(r0 - r1, 0)} puestos en el ranking SCVS desde ${desde} (${formatNumber(r0, 0)} → ${formatNumber(r1, 0)})`, tone: "up" });
 
     // Giro del margen neto
     const u0 = (c.years.get(desde) as Metrics).utilidad_neta;
@@ -225,7 +225,7 @@ async function compute(anio: number): Promise<InterestingPool> {
 }
 
 // Versión del algoritmo: al cambiar reglas o umbrales se sube y el resultado guardado se recalcula.
-const ALGO_VERSION = 1;
+const ALGO_VERSION = 2;
 
 async function readCache(anio: number): Promise<InterestingPool | null> {
   try {

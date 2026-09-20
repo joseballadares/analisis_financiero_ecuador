@@ -4,6 +4,14 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const RELEASES: Release[] = [
   {
+    version: "0.20",
+    date: "2026-09-19",
+    title: "Radar Estratégico más compacto",
+    changes: [
+      "La tabla del Radar Estratégico muestra cada señal en una sola línea (etiqueta y detalle) y da más ancho a esa columna; las filas miden menos de la mitad.",
+    ],
+  },
+  {
     version: "0.19",
     date: "2026-09-19",
     title: "Estados financieros más claros y tema claro/oscuro",

@@ -92,12 +92,12 @@ export default function InterestingTable({
                   # <SortIcon dir={dirOf("rank")} />
                 </span>
               </th>
-              <th className={th}>
+              <th className={`${th} w-[24%]`}>
                 <span className={sortable} onClick={() => setSortKey("nombre")}>
                   Empresa <SortIcon dir={dirOf("nombre")} />
                 </span>
               </th>
-              <th className={th}>
+              <th className={`${th} w-[52%]`}>
                 <span className={sortable} onClick={() => setSortKey("senales")}>
                   Por qué está en el radar <SortIcon dir={dirOf("senales")} />
                 </span>
@@ -122,23 +122,23 @@ export default function InterestingTable({
           <tbody>
             {shown.map((r) => (
               <tr key={r.ruc} className="border-b border-border align-top last:border-b-0 hover:bg-surface">
-                <td className="px-3 py-3 tabular-nums text-muted">{r.rank}</td>
-                <td className="px-3 py-3">
+                <td className="px-3 py-2 tabular-nums text-muted">{r.rank}</td>
+                <td className="px-3 py-2">
                   <Link href={`/empresa/${r.ruc}`} className="font-medium hover:text-brand hover:underline">
                     {r.nombre}
                   </Link>
-                  <div className="mt-0.5 text-xs text-muted">{r.sector ? (sectors[r.sector] ?? r.sector) : ""}</div>
+                  <div className="text-[11px] leading-tight text-muted">{r.sector ? (sectors[r.sector] ?? r.sector) : ""}</div>
                 </td>
-                <td className="px-3 py-3">
-                  <div className="space-y-2">
+                <td className="px-3 py-2">
+                  <div className="space-y-1">
                     {r.signals.map((s) => (
-                      <SignalChip key={s.id} s={s} detail />
+                      <SignalChip key={s.id} s={s} inline />
                     ))}
                   </div>
                 </td>
-                <td className="px-3 py-3 text-right tabular-nums">{formatCompactMoney(r.ingresos)}</td>
-                <td className={`px-3 py-3 text-right tabular-nums ${(r.margen ?? 0) < 0 ? "text-negative" : ""}`}>{r.margen === null ? "—" : formatPercent(r.margen, 1)}</td>
-                <td className={`px-3 py-3 text-right tabular-nums ${(r.roe ?? 0) < 0 ? "text-negative" : ""}`}>{r.roe === null ? "—" : formatPercent(r.roe, 1)}</td>
+                <td className="px-3 py-2 text-right tabular-nums">{formatCompactMoney(r.ingresos)}</td>
+                <td className={`px-3 py-2 text-right tabular-nums ${(r.margen ?? 0) < 0 ? "text-negative" : ""}`}>{r.margen === null ? "—" : formatPercent(r.margen, 1)}</td>
+                <td className={`px-3 py-2 text-right tabular-nums ${(r.roe ?? 0) < 0 ? "text-negative" : ""}`}>{r.roe === null ? "—" : formatPercent(r.roe, 1)}</td>
               </tr>
             ))}
             {shown.length === 0 && (
