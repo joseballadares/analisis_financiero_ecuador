@@ -34,8 +34,12 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Tema: sin elección se sigue al sistema; el botón del encabezado fija data-theme="light" o "dark". */
+:root {
+  color-scheme: light;
+}
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --chart-blue: #5b9dff;
     --chart-blue-soft: #2a4a7d;
     --chart-gray: #7c8698;
@@ -51,7 +55,26 @@
     --accent: #e0973f;
     --positive: #2bb894;
     --negative: #e5596b;
+    color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+    --chart-blue: #5b9dff;
+    --chart-blue-soft: #2a4a7d;
+    --chart-gray: #7c8698;
+    --chart-gray-soft: #2b3340;
+    --background: #0b0f14;
+    --surface: #12181f;
+    --foreground: #e7ebf0;
+    --muted: #8b95a3;
+    --border: #232b35;
+    --brand: #2bb894;
+    --brand-strong: #1f8f73;
+    --brand-soft: #10241f;
+    --accent: #e0973f;
+    --positive: #2bb894;
+    --negative: #e5596b;
+    color-scheme: dark;
 }
 
 body {

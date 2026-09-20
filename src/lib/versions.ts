@@ -4,6 +4,17 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const RELEASES: Release[] = [
   {
+    version: "0.19",
+    date: "2026-09-19",
+    title: "Estados financieros más claros y tema claro/oscuro",
+    changes: [
+      "Estados financieros: la vista compacta usa nombres simples y agrupa lo demás en \"Otros\"; la vista completa mantiene los nombres oficiales.",
+      "Las cuentas principales se distinguen con fondo y letra fuerte, y las secundarias con un tono más tenue, en tema claro y oscuro.",
+      "Importes completos o abreviados, marca (★) del año seleccionado, y enlace para reportar errores.",
+      "Botón en el encabezado para cambiar entre tema claro y oscuro; se recuerda la elección.",
+    ],
+  },
+  {
     version: "0.18",
     date: "2026-09-19",
     title: "Ratios en dos secciones",

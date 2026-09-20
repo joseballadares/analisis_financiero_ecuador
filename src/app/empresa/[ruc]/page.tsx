@@ -174,6 +174,9 @@ export default async function EmpresaPage({
                     rows={niifRows}
                     names={names}
                     csvHref={`/api/empresa/${company.ruc}/estados`}
+                    reportHref={`https://github.com/joseballadares/analisis_financiero_ecuador/issues/new?title=${encodeURIComponent(
+                      `Error en estados financieros: ${company.nombre} (RUC ${company.ruc}) ${current.anio}`,
+                    )}&body=${encodeURIComponent("Describe qué cifra parece incorrecta y cuál sería el valor esperado (con la fuente).")}`}
                     sriYears={sriYears}
                     detailYear={current.anio}
                     detail={
