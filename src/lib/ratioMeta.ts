@@ -26,72 +26,97 @@ export function ratioInfo(key: string): RatioInfo | null {
   };
 }
 
-// Grupos por tipo de ratio para presentar los indicadores de forma ordenada.
-export type RatioGroup = { id: string; label: string; desc: string; keys: string[] };
+// Grupos por tipo de ratio (en este orden se muestran los botones y las secciones).
+export type RatioGroup = { id: string; label: string; short: string; desc: string; keys: string[] };
 
 export const GROUPS: RatioGroup[] = [
   {
-    id: "margenes",
-    label: "Márgenes",
+    id: "rentabilidad",
+    label: "Rentabilidad",
+    short: "Rentabilidad",
     desc: "Cuánto queda de cada dólar vendido en cada nivel del estado de resultados.",
     keys: ["margen_bruto", "margen_operacional", "margen_ebitda", "rent_neta_ventas", "impac_gasto_a_v"],
   },
   {
-    id: "retorno",
-    label: "Retorno sobre la inversión",
-    desc: "Qué rendimiento genera la empresa sobre sus activos, su patrimonio y su capital invertido.",
-    keys: ["roe", "roa", "roic", "rent_neta_activo", "rent_ope_activo", "rent_ope_patrimonio"],
-  },
-  {
     id: "liquidez",
     label: "Liquidez",
+    short: "Liquidez",
     desc: "Capacidad de pagar las obligaciones de corto plazo.",
     keys: ["liquidez_corriente", "prueba_acida", "razon_inmediata", "capital_trabajo"],
   },
   {
+    id: "operatividad",
+    label: "Operatividad",
+    short: "Operatividad",
+    desc: "Qué tan bien usa sus activos y cuánto tarda el ciclo de cobrar, vender y pagar; incluye el flujo de caja estimado.",
+    keys: [
+      "rot_ventas",
+      "rot_activo_fijo",
+      "rot_cartera",
+      "rot_inventarios",
+      "rot_capital_trabajo",
+      "per_med_cobranza",
+      "dio",
+      "per_med_pago",
+      "ccc",
+      "fcf",
+      "fcf_margen",
+    ],
+  },
+  {
     id: "endeudamiento",
     label: "Endeudamiento y estructura",
-    desc: "Cómo se financia la empresa y cuánto pesa la deuda.",
+    short: "Endeudamiento",
+    desc: "Cómo se financia la empresa, cuánto pesa la deuda y si la operación alcanza para pagarla.",
     keys: [
       "end_activo",
       "end_patrimonial",
+      "independencia_financiera",
       "apalancamiento",
       "apalancamiento_financiero",
+      "deuda_patrimonio",
+      "deuda_neta_ebitda",
       "end_corto_plazo",
       "end_largo_plazo",
+      "concentracion_deuda_cp",
       "end_activo_fijo",
+      "cobertura_activo_fijo",
+      "peso_activo_corriente",
       "fortaleza_patrimonial",
       "end_patrimonial_ct",
       "end_patrimonial_nct",
       "apalancamiento_c_l_plazo",
-      "deuda_neta_ebitda",
+      "cobertura_interes",
+      "cobertura_ebitda",
+      "impac_carga_finan",
     ],
   },
   {
-    id: "cobertura",
-    label: "Cobertura de deuda",
-    desc: "Si la operación genera lo suficiente para pagar los intereses.",
-    keys: ["cobertura_interes", "cobertura_ebitda", "impac_carga_finan"],
-  },
-  {
-    id: "eficiencia",
-    label: "Eficiencia (rotaciones)",
-    desc: "Qué tan bien usa los activos para generar ventas.",
-    keys: ["rot_ventas", "rot_activo_fijo", "rot_cartera"],
-  },
-  {
-    id: "ciclo",
-    label: "Ciclo de efectivo",
-    desc: "Cuántos días tarda en cobrar, vender el inventario y pagar.",
-    keys: ["per_med_cobranza", "dio", "per_med_pago", "ccc"],
-  },
-  {
-    id: "flujo",
-    label: "Flujo de caja (estimado)",
-    desc: "Efectivo que genera el negocio después de sus inversiones, estimado con variaciones del balance.",
-    keys: ["fcf", "fcf_margen"],
+    id: "retorno",
+    label: "Retorno sobre la inversión",
+    short: "Retorno sobre la inversión",
+    desc: "Qué rendimiento genera la empresa sobre sus activos, su patrimonio y su capital invertido.",
+    keys: ["roe", "roa", "roic", "roce", "rent_neta_activo", "rent_ope_activo", "rent_ope_patrimonio"],
   },
 ];
+
+// Ratios que solo existen con balance NIIF: se ocultan cuando no hay ningún valor en los años mostrados.
+const NEW_KEYS = new Set(Object.keys(NEW_RATIOS));
+
+export function visibleKeys(
+  group: RatioGroup,
+  years: number[],
+  byYear: Record<number, { values: Record<string, number | null> } | undefined>,
+  only?: string[],
+): string[] {
+  return group.keys
+    .filter((k) => !only || only.includes(k))
+    .filter((k) => {
+      if (!ratioInfo(k)) return false;
+      const any = years.some((y) => typeof byYear[y]?.values[k] === "number");
+      return any || !NEW_KEYS.has(k);
+    });
+}
 
 export const FLAG_LABEL: Record<Flag, string> = {
   aprox: "aprox.",

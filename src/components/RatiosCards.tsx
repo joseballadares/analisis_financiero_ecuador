@@ -1,23 +1,10 @@
 import type { RatioDist } from "@/lib/db";
 import type { YearRatios } from "@/lib/star";
 import { formatRatioValue } from "@/lib/format";
-import { FLAG_HELP, FLAG_LABEL, GROUPS, ratioInfo } from "@/lib/ratioMeta";
+import { FLAG_HELP, FLAG_LABEL, GROUPS, ratioInfo, visibleKeys } from "@/lib/ratioMeta";
 import { trendTone } from "@/lib/trend";
 import Sparkline from "@/components/Sparkline";
 import Semaforo from "@/components/Semaforo";
-
-const NEW_KEYS = new Set([
-  "margen_ebitda",
-  "roic",
-  "razon_inmediata",
-  "capital_trabajo",
-  "deuda_neta_ebitda",
-  "cobertura_ebitda",
-  "dio",
-  "ccc",
-  "fcf",
-  "fcf_margen",
-]);
 
 // Vista en tarjetas y por grupos de ratios: cada grupo tiene su encabezado y descripción.
 export default function RatiosCards({
@@ -26,25 +13,21 @@ export default function RatiosCards({
   dist,
   only,
   showBenchmark = true,
+  group = "todos",
 }: {
   years: number[];
   byYear: Record<number, YearRatios>;
   dist: Record<string, RatioDist>;
   only?: string[];
   showBenchmark?: boolean;
+  group?: string;
 }) {
   const current = years[years.length - 1];
   const prevYears = years.slice(-4, -1);
   return (
     <div className="space-y-6">
-      {GROUPS.map((g) => {
-        const keys = g.keys
-          .filter((k) => !only || only.includes(k))
-          .filter((k) => {
-            if (!ratioInfo(k)) return false;
-            const any = years.some((y) => typeof byYear[y]?.values[k] === "number");
-            return any || !NEW_KEYS.has(k);
-          });
+      {GROUPS.filter((g) => group === "todos" || g.id === group).map((g) => {
+        const keys = visibleKeys(g, years, byYear, only);
         if (keys.length === 0) return null;
         return (
           <section key={g.id}>

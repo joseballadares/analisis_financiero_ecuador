@@ -41,6 +41,10 @@ const PERCENT_KEYS = new Set([
   "roic",
   "fcf_margen",
   "dp_margen_ebit",
+  "independencia_financiera",
+  "peso_activo_corriente",
+  "concentracion_deuda_cp",
+  "roce",
 ]);
 
 const DAYS_KEYS = new Set(["per_med_cobranza", "per_med_pago", "dio", "ccc"]);

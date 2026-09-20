@@ -201,7 +201,12 @@ export async function getBenchmarkMedians(params: {
         ('roic', CASE WHEN g.hasb AND g.ven > 0 AND (g.debt + g.pat - COALESCE(g.cash, 0)) > 0
                       THEN g.uo * 0.75 / (g.debt + g.pat - COALESCE(g.cash, 0)) END),
         ('deuda_neta_ebitda', CASE WHEN g.hasb AND (g.uo + g.da) > 0 THEN (g.debt - COALESCE(g.cash, 0)) / (g.uo + g.da) END),
-        ('razon_inmediata', CASE WHEN g.hasb AND g.pc > 0 AND g.cash IS NOT NULL THEN g.cash / g.pc END)
+        ('razon_inmediata', CASE WHEN g.hasb AND g.pc > 0 AND g.cash IS NOT NULL THEN g.cash / g.pc END),
+        ('independencia_financiera', CASE WHEN g.act > 0 THEN g.pat / g.act END),
+        ('concentracion_deuda_cp', CASE WHEN g.hasb AND g.pc > 0 AND g.act - g.pat > 0 THEN g.pc / (g.act - g.pat) END),
+        ('deuda_patrimonio', CASE WHEN g.hasb AND g.pat > 0 THEN g.debt / g.pat END),
+        ('rot_inventarios', CASE WHEN g.hasb AND g.cvp > 0 AND g.inv > 0 THEN g.cvp / g.inv END),
+        ('roce', CASE WHEN g.hasb AND g.ven > 0 AND g.pc IS NOT NULL AND g.act - g.pc > 0 THEN g.uo / (g.act - g.pc) END)
       ) AS k(key, v)
       WHERE k.v IS NOT NULL
     ), s AS (

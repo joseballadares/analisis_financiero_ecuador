@@ -1,23 +1,10 @@
 import type { RatioDist } from "@/lib/db";
 import type { YearRatios } from "@/lib/star";
 import { formatRatioValue } from "@/lib/format";
-import { FLAG_HELP, FLAG_LABEL, GROUPS, ratioInfo } from "@/lib/ratioMeta";
+import { FLAG_HELP, FLAG_LABEL, GROUPS, ratioInfo, visibleKeys } from "@/lib/ratioMeta";
 import { trendTone } from "@/lib/trend";
 import Sparkline from "@/components/Sparkline";
 import Semaforo from "@/components/Semaforo";
-
-const NEW_KEYS = new Set([
-  "margen_ebitda",
-  "roic",
-  "razon_inmediata",
-  "capital_trabajo",
-  "deuda_neta_ebitda",
-  "cobertura_ebitda",
-  "dio",
-  "ccc",
-  "fcf",
-  "fcf_margen",
-]);
 
 export default function RatiosTable({
   years,
@@ -25,12 +12,14 @@ export default function RatiosTable({
   dist,
   only,
   showBenchmark = true,
+  group = "todos",
 }: {
   years: number[];
   byYear: Record<number, YearRatios>;
   dist: Record<string, RatioDist>;
   only?: string[];
   showBenchmark?: boolean;
+  group?: string;
 }) {
   const current = years[years.length - 1];
   const colSpan = years.length + (showBenchmark ? 3 : 2);
@@ -50,14 +39,8 @@ export default function RatiosTable({
           </tr>
         </thead>
         <tbody>
-          {GROUPS.map((g) => {
-            const visible = g.keys
-              .filter((k) => !only || only.includes(k))
-              .filter((k) => {
-                if (!ratioInfo(k)) return false;
-                const anyValue = years.some((y) => typeof byYear[y]?.values[k] === "number");
-                return anyValue || !NEW_KEYS.has(k);
-              });
+          {GROUPS.filter((g) => group === "todos" || g.id === group).map((g) => {
+            const visible = visibleKeys(g, years, byYear, only);
             if (visible.length === 0) return null;
             return (
               <FragmentRows key={g.id} title={g.label} desc={g.desc} colSpan={colSpan}>

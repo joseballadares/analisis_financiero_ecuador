@@ -93,6 +93,21 @@ export function advancedRatios(m: Metrics, niif?: Data, prev?: Data): YearRatios
     niif && ok(cash) && ok(niif["201"]) && niif["201"] > 0 ? cash / niif["201"] : null;
   values.capital_trabajo = niif && ok(niif["101"]) && ok(niif["201"]) ? niif["101"] - niif["201"] : null;
 
+  // Estructura y operatividad adicionales (con el balance NIIF; la independencia financiera sale de las métricas).
+  const ac = niif?.["101"];
+  const anc = niif?.["102"];
+  const pc = niif?.["201"];
+  const pasT = niif?.["2"];
+  const wc = ok(ac) && ok(pc) ? ac - pc : null;
+  values.independencia_financiera = ok(pat) && ok(act) && act > 0 ? pat / act : null;
+  values.peso_activo_corriente = ok(ac) && ok(act) && act > 0 ? ac / act : null;
+  values.concentracion_deuda_cp = ok(pc) && ok(pasT) && pasT > 0 ? pc / pasT : null;
+  values.cobertura_activo_fijo = ok(pat) && ok(anc) && anc > 0 ? pat / anc : null;
+  values.deuda_patrimonio = debt !== null && ok(pat) && pat > 0 ? debt / pat : null;
+  values.rot_inventarios = niif && ok(cost) && cost > 0 && ok(niif["10103"]) && niif["10103"] > 0 ? cost / niif["10103"] : null;
+  values.rot_capital_trabajo = posVen && wc !== null && wc > 0 ? ven! / wc : null;
+  values.roce = uo !== null && ok(pc) && ok(act) && act - pc > 0 ? uo / (act - pc) : null;
+
   if (niif && prev && ok(un)) {
     const dNwc = operatingWorkingCapital(niif) - operatingWorkingCapital(prev);
     const dFixed = sum(niif, FIXED_CODES) - sum(prev, FIXED_CODES);
@@ -174,6 +189,12 @@ export const DIRECTION: Record<string, Direction> = {
   dio: "lower",
   ccc: "lower",
   deuda_neta_ebitda: "lower",
+  independencia_financiera: "higher",
+  cobertura_activo_fijo: "higher",
+  rot_inventarios: "higher",
+  roce: "higher",
+  concentracion_deuda_cp: "lower",
+  deuda_patrimonio: "lower",
 };
 
 export type RatioMeta = { nombre: string; formula: string; categoria: string; nota?: string };
@@ -190,6 +211,14 @@ export const NEW_RATIOS: Record<string, RatioMeta> = {
   ccc: { nombre: "Ciclo de conversión de efectivo (CCC)", formula: "DSO + DIO - DPO", categoria: "gestion" },
   fcf: { nombre: "Flujo de caja libre (FCF) estimado", formula: "Utilidad neta - Δ capital de trabajo operativo - Δ activos fijos e intangibles", categoria: "flujo" },
   fcf_margen: { nombre: "Margen de flujo de caja libre", formula: "FCF estimado / Ingresos", categoria: "flujo" },
+  independencia_financiera: { nombre: "Independencia financiera", formula: "Patrimonio / Activo total", categoria: "solvencia" },
+  peso_activo_corriente: { nombre: "Peso del activo corriente", formula: "Activo corriente / Activo total", categoria: "solvencia" },
+  concentracion_deuda_cp: { nombre: "Concentración de la deuda a corto plazo", formula: "Pasivo corriente / Pasivo total", categoria: "solvencia" },
+  cobertura_activo_fijo: { nombre: "Cobertura del activo no corriente", formula: "Patrimonio / Activo no corriente", categoria: "solvencia" },
+  deuda_patrimonio: { nombre: "Deuda financiera / Patrimonio", formula: "Deuda financiera / Patrimonio", categoria: "solvencia" },
+  rot_inventarios: { nombre: "Rotación de inventarios", formula: "Costo de ventas / Inventarios", categoria: "gestion" },
+  rot_capital_trabajo: { nombre: "Rotación del capital de trabajo", formula: "Ingresos / Capital de trabajo", categoria: "gestion" },
+  roce: { nombre: "ROCE (retorno sobre el capital empleado)", formula: "Utilidad operacional / (Activo total - Pasivo corriente)", categoria: "rentabilidad" },
 };
 
 // Nombres en español con la sigla en inglés para los ratios que ya existían.

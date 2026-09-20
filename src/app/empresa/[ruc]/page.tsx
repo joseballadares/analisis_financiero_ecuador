@@ -3,10 +3,8 @@ import Link from "next/link";
 import { loadCompanyBundle } from "@/lib/companyData";
 import { segmentName, sentenceCase, titleCase } from "@/lib/format";
 import CompanyFicha, { type Fact } from "@/components/CompanyFicha";
-import RatiosTable from "@/components/RatiosTable";
-import RatiosCards from "@/components/RatiosCards";
-import ViewToggle from "@/components/ViewToggle";
 import RatiosSections from "@/components/RatiosSections";
+import RatiosExplorer from "@/components/RatiosExplorer";
 import StarRatios from "@/components/StarRatios";
 import BalanceSheetView from "@/components/BalanceSheetView";
 import PeersTab from "@/components/PeersTab";
@@ -226,25 +224,12 @@ export default async function EmpresaPage({
                         </p>
                       )}
                       <div className="mt-4">
-                        <ViewToggle
-                          cards={
-                            <RatiosCards
-                              years={tableYears}
-                              byYear={byYear}
-                              dist={dist}
-                              only={structureOnly ? STRUCTURE_KEYS : undefined}
-                              showBenchmark={!inactive}
-                            />
-                          }
-                          table={
-                            <RatiosTable
-                              years={tableYears}
-                              byYear={byYear}
-                              dist={dist}
-                              only={structureOnly ? STRUCTURE_KEYS : undefined}
-                              showBenchmark={!inactive}
-                            />
-                          }
+                        <RatiosExplorer
+                          years={tableYears}
+                          byYear={byYear}
+                          dist={dist}
+                          only={structureOnly ? STRUCTURE_KEYS : undefined}
+                          showBenchmark={!inactive}
                         />
                       </div>
                       {!structureOnly && (

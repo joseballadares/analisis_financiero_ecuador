@@ -4,6 +4,16 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const RELEASES: Release[] = [
   {
+    version: "0.22",
+    date: "2026-09-19",
+    title: "Ratios por grupo y nuevos indicadores",
+    changes: [
+      "Ratios por año: botones al inicio para ver todos o solo Rentabilidad, Liquidez, Operatividad, Endeudamiento o Retorno sobre la inversión, con el número de ratios de cada grupo; funcionan en la tabla y en las tarjetas.",
+      "Ocho indicadores nuevos: independencia financiera, peso del activo corriente, concentración de la deuda a corto plazo, cobertura del activo no corriente, deuda financiera / patrimonio, rotación de inventarios, rotación del capital de trabajo y ROCE.",
+      "Cinco de ellos ya se comparan con las empresas similares (semáforo).",
+    ],
+  },
+  {
     version: "0.21",
     date: "2026-09-19",
     title: "Resumen con datos clave y barras pequeñas",
