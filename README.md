@@ -10,6 +10,20 @@ públicos de la Superintendencia de Compañías, Valores y Seguros.
 - [Netlify DB](https://docs.netlify.com/build/data-and-storage/netlify-db/) (Postgres) vía `@netlify/database`
 - Desplegado en Netlify
 
+## Probar en tu computador (sin gastar créditos de Netlify)
+
+El sitio se puede ejecutar completo en tu computador, con una base de datos local que contiene una muestra de los
+datos reales (las 12.000 empresas con más ingresos, con todos sus años y balances, más todo el catálogo de
+compañías para la búsqueda).
+
+- **Cada vez que quieras probar:** doble clic en `probar-local.bat` (o, en una terminal, `npm run dev:local`) y abre
+  <http://localhost:3000>. Los cambios en el código se ven al guardar el archivo. Para detener, Ctrl+C.
+- **Solo la primera vez en otro computador:** `npm install`, luego `npm run db:seed` (prepara los datos de muestra
+  desde `C:\dev\afe-processed` en `C:\dev\afe-localdb\seed`) y después `npm run dev:local`, que crea la base y la carga.
+- Es la misma aplicación que se publica; solo cambia la base de datos. Las cifras de ranking y "de N empresas" son
+  las de la muestra, no las de producción.
+- Cuando todo se vea bien, se publica una sola vez con `git push`.
+
 ## Desarrollo local
 
 ```bash

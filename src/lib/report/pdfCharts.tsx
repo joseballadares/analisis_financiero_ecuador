@@ -39,8 +39,8 @@ function Txt(props: { x: number; y: number; size?: number; fill?: string; anchor
 
 // Gráfico de líneas de una serie: un punto por año, etiqueta del último valor, hitos opcionales y tendencia.
 export function LinePanel({
-  categories,
-  values,
+  categories: categoriesIn,
+  values: valuesIn,
   unit,
   width,
   height,
@@ -61,6 +61,19 @@ export function LinePanel({
   label?: string;
   eventLabels?: boolean;
 }) {
+  // El eje se acorta a los años con movimiento relevante (en importes, al menos 0,5 % del mayor valor); mínimo 3 años.
+  const maxAbs = Math.max(0, ...valuesIn.filter(isNum).map((v) => Math.abs(v)));
+  const active = (i: number) => {
+    const v = valuesIn[i];
+    return isNum(v) && (unit === "money" ? v !== 0 && Math.abs(v) >= 0.005 * maxAbs : true);
+  };
+  let from = 0;
+  let to = categoriesIn.length - 1;
+  while (from < to && !active(from)) from++;
+  while (to > from && !active(to)) to--;
+  from = Math.max(0, Math.min(from, to - 2));
+  const categories = categoriesIn.slice(from, to + 1);
+  const values = valuesIn.slice(from, to + 1);
   const PAD = { l: 34, r: 12, t: events && eventLabels ? 15 : 9, b: 14 };
   const n = categories.length;
   const iw = width - PAD.l - PAD.r;

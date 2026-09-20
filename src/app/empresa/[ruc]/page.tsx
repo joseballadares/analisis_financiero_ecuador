@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { loadCompanyBundle } from "@/lib/companyData";
-import { formatMoney, formatPercent, segmentName, sentenceCase, titleCase } from "@/lib/format";
+import { segmentName, sentenceCase, titleCase } from "@/lib/format";
+import CompanyFicha, { type Fact } from "@/components/CompanyFicha";
 import RatiosTable from "@/components/RatiosTable";
 import RatiosCards from "@/components/RatiosCards";
 import ViewToggle from "@/components/ViewToggle";
@@ -68,27 +69,32 @@ export default async function EmpresaPage({
   } = loaded.bundle;
   const alertCount = flags.filter((f) => f.severity !== "info").length;
   const rankNow = current.posicion_general;
-  const facts = [
+  const actividad = current.ciiu_n6 ? `${current.ciiu_n6}${ciiuDesc ? ` · ${sentenceCase(ciiuDesc)}` : ""}` : "—";
+  const facts: Fact[] = [
     { label: "RUC", value: company.ruc },
     { label: "Tipo de compañía", value: company.tipo?.trim() || "—" },
     { label: "Provincia", value: titleCase(company.provincia?.trim()) },
+    { label: "Tamaño (SCVS)", value: segmentName(current.cod_segmento) },
+    { label: "Mercado de Valores", value: filled.some((f) => f.metrics.cia_imvalores === 1) ? "Sí, participa" : "No" },
+    { label: `Empleados ${current.anio}`, value: m.n_empleados ? Number(m.n_empleados).toLocaleString("es-EC") : "—" },
+    {
+      label: `Ranking ${current.anio}`,
+      value: rankNow ? `#${rankNow.toLocaleString("es-EC")} de ${(universe[current.anio] ?? 0).toLocaleString("es-EC")}` : "—",
+    },
     {
       label: "Actividad principal",
+      wide: true,
+      title: actividad,
       value: current.ciiu_n6 ? (
         <>
-          <span className="font-mono text-xs">{current.ciiu_n6}</span>
+          <Link href={`/sector/${current.ciiu_n1}`} className="font-mono text-xs text-brand hover:underline">
+            {current.ciiu_n6}
+          </Link>
           {ciiuDesc ? ` · ${sentenceCase(ciiuDesc)}` : ""}
         </>
       ) : (
         "—"
       ),
-    },
-    { label: "Tamaño (Superintendencia)", value: segmentName(current.cod_segmento) },
-    { label: "Mercado de Valores", value: filled.some((f) => f.metrics.cia_imvalores === 1) ? "Sí, participa" : "No" },
-    { label: `Empleados ${current.anio}`, value: m.n_empleados ? Number(m.n_empleados).toLocaleString("es-EC") : "—" },
-    {
-      label: `Ranking nacional ${current.anio}`,
-      value: rankNow ? `#${rankNow.toLocaleString("es-EC")} de ${(universe[current.anio] ?? 0).toLocaleString("es-EC")}` : "—",
     },
   ];
   const dist = inactive ? {} : (peerGroup?.benchmark.dist ?? {});
@@ -100,21 +106,7 @@ export default async function EmpresaPage({
         <SearchBox compact />
       </div>
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">{company.nombre}</h1>
-          <p className="mt-1 text-sm text-muted">
-            RUC {company.ruc} · {company.tipo?.trim()} · {titleCase(company.provincia?.trim())}
-            {current.ciiu_n6 && (
-              <>
-                {" "}
-                ·{" "}
-                <Link href={`/sector/${current.ciiu_n1}`} className="text-brand hover:underline">
-                  {current.ciiu_n6}
-                </Link>
-              </>
-            )}
-          </p>
-        </div>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{company.nombre}</h1>
         <div className="flex flex-wrap items-center gap-3">
           <a
             href={`/api/empresa/${ruc}/informe?anio=${current.anio}`}
@@ -138,14 +130,9 @@ export default async function EmpresaPage({
         </div>
       )}
 
-      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Stat label="Ingresos" value={formatMoney(m.ingresos_ventas as number)} delta={change(m.ingresos_ventas, prevYear?.metrics.ingresos_ventas)} />
-        <Stat label="Activos" value={formatMoney(m.activos as number)} delta={change(m.activos, prevYear?.metrics.activos)} />
-        <Stat label="Patrimonio" value={formatMoney(m.patrimonio as number)} delta={change(m.patrimonio, prevYear?.metrics.patrimonio)} />
-        <Stat label="Utilidad neta" value={formatMoney(m.utilidad_neta as number)} delta={change(m.utilidad_neta, prevYear?.metrics.utilidad_neta)} />
-      </div>
+      <CompanyFicha facts={facts} />
 
-      <div className="mt-10">
+      <div className="mt-6">
         <Tabs
           tabs={[
             {
@@ -157,7 +144,6 @@ export default async function EmpresaPage({
                   byYear={byYear}
                   currentYear={current.anio}
                   universe={universe}
-                  facts={facts}
                   dist={dist}
                   groupLabel={peerGroup ? `${peerGroup.levelLabel} (CIIU ${peerGroup.prefix})` : null}
                   benchN={peerGroup?.benchmark.n ?? 0}
@@ -304,25 +290,6 @@ export default async function EmpresaPage({
           ]}
         />
       </div>
-    </div>
-  );
-}
-
-function change(cur: number | null | undefined, prev: number | null | undefined): number | null {
-  if (typeof cur !== "number" || typeof prev !== "number" || prev === 0) return null;
-  return (cur - prev) / Math.abs(prev);
-}
-
-function Stat({ label, value, delta }: { label: string; value: string; delta?: number | null }) {
-  return (
-    <div className="rounded-xl border border-border bg-surface p-4">
-      <div className="text-xs text-muted">{label}</div>
-      <div className="mt-1 text-lg font-semibold tabular-nums">{value}</div>
-      {delta != null && (
-        <div className={`mt-0.5 text-xs tabular-nums ${delta >= 0 ? "text-positive" : "text-negative"}`}>
-          {delta >= 0 ? "▲" : "▼"} {formatPercent(Math.abs(delta), 1)} vs año anterior
-        </div>
-      )}
     </div>
   );
 }

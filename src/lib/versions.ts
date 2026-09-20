@@ -4,6 +4,19 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const RELEASES: Release[] = [
   {
+    version: "0.17",
+    date: "2026-09-19",
+    title: "Resumen del perfil rediseñado",
+    changes: [
+      "Ficha de la empresa al inicio del perfil, en forma compacta; se retiran las cuatro tarjetas de cifras que se repetían.",
+      "Resumen: se mantienen la estructura de activo, pasivo y patrimonio, y los ingresos y la utilidad neta; los demás gráficos pasan a ser EBITDA y EBITDA Margin, FCF, ROIC, DSO, DIO, DPO, CCC, Current Ratio y Net Debt / EBITDA, cada uno con su definición y fórmula.",
+      "Se mantienen la posición en el ranking nacional, la participación en el segmento y la ubicación frente a empresas de su sector y tamaño.",
+      "Los gráficos se acortan a los años con movimiento relevante (sin años vacíos o en cero al inicio).",
+      "En el celular el cuadro flotante de los gráficos se cierra solo, al tocar fuera o al desplazarse.",
+      "Nuevo entorno para probar en el computador sin publicar (probar-local.bat).",
+    ],
+  },
+  {
     version: "0.16",
     date: "2026-09-18",
     title: "Radar Estratégico",

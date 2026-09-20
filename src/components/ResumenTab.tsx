@@ -3,22 +3,27 @@ import type { CompanyYearFinancial, RatioDist } from "@/lib/db";
 import type { YearRatios } from "@/lib/star";
 import { formatCompactMoney, formatNumber, formatPercent, formatRatioValue } from "@/lib/format";
 import { C, EVENTS } from "@/components/charts";
-import LineInteractive, { type Unit } from "@/components/LineInteractive";
+import LineInteractive, { type Unit, type LSeries } from "@/components/LineInteractive";
 import { RankBanner, SixTiles, VerticalEquations, type Amounts } from "@/components/SummaryBlocks";
-import { EmployeesCard, RankCard } from "@/components/TrajectoryCards";
+import { RankCard } from "@/components/TrajectoryCards";
 import DistributionChart, { type DistItem } from "@/components/DistributionChart";
-
-export type Facts = { label: string; value: ReactNode }[];
 
 const num = (v: number | null | undefined) => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
-function Card({ title, sub, note, children }: { title: string; sub?: string; note?: string; children: ReactNode }) {
+function Card({ title, sub, formula, latest, children }: { title: string; sub?: string; formula?: string; latest?: string; children: ReactNode }) {
   return (
     <div className="rounded-xl border border-border bg-surface p-4">
-      <h3 className="text-sm font-semibold leading-snug">{title}</h3>
-      {sub && <p className="mt-0.5 text-xs text-muted">{sub}</p>}
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="text-sm font-semibold leading-snug">{title}</h3>
+        {latest && <span className="shrink-0 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold tabular-nums text-brand">{latest}</span>}
+      </div>
+      {sub && <p className="mt-1 text-xs text-muted">{sub}</p>}
+      {formula && (
+        <p className="mt-1 text-xs text-muted">
+          <span className="font-medium text-foreground">Fórmula:</span> {formula}
+        </p>
+      )}
       <div className="mt-2">{children}</div>
-      {note && <p className="mt-2 text-xs text-muted">{note}</p>}
     </div>
   );
 }
@@ -32,7 +37,6 @@ export default function ResumenTab({
   currentYear,
   segment,
   universe,
-  facts,
   dist,
   groupLabel,
   benchN,
@@ -42,7 +46,6 @@ export default function ResumenTab({
   currentYear: number;
   segment: ReactNode;
   universe: Record<number, number>;
-  facts: Facts;
   dist: Record<string, RatioDist>;
   groupLabel: string | null;
   benchN: number;
@@ -56,8 +59,6 @@ export default function ResumenTab({
   const cats = trend.map((f) => String(f.anio));
   const met = (k: string) => trend.map((f) => num(f.metrics[k]));
   const val = (k: string) => trend.map((f) => num(byYear[f.anio]?.values[k]));
-  const ven = (f: CompanyYearFinancial) =>
-    (f.metrics.ingresos_ventas ?? 0) > 0 ? (f.metrics.ingresos_ventas as number) : num(f.metrics.ingresos_totales);
   const spansBreak = trend.some((f) => f.anio <= 2021) && trend.some((f) => f.anio >= 2022);
   const has = (arr: (number | null)[], n = 2) => arr.filter((v) => v !== null).length >= n;
   const first = trend[0];
@@ -83,78 +84,130 @@ export default function ResumenTab({
       ? `Los ingresos ${verb(cIng)} ${formatPercent(Math.abs(cIng), 0)} desde ${first.anio}` +
         (cUti !== null ? `; la utilidad neta, ${cUti >= 0 ? "" : "-"}${formatPercent(Math.abs(cUti), 0)}` : "")
       : "Ingresos vs utilidad neta";
-  // Productividad
-  const prod = trend.map((f) => {
-    const v = ven(f);
-    const e = num(f.metrics.n_empleados);
-    return v && e && e > 0 ? v / e : null;
-  });
-  const pFirst = prod.find((v) => v !== null) ?? null;
-  const pLast = [...prod].reverse().find((v) => v !== null) ?? null;
-  const pChange = change(pFirst, pLast);
 
-  // Ciclo de efectivo (CCC = DSO + DIO - DPO); plazos absurdos (rotaciones casi nulas) se omiten.
+  // Indicadores: sin costos reportados el EBITDA queda sobrestimado (márgenes de 100 %) y los días mayores a 2 años
+  // no son plazos reales (rotaciones casi nulas); esos valores se omiten para no deformar las escalas.
+  const withCosts = (arr: (number | null)[]) => arr.map((v, i) => ((trend[i].metrics.costos_ventas_prod ?? 0) > 0 ? v : null));
+  const days = (k: string) => val(k).map((v) => (v !== null && v >= 0 && v <= 730 ? v : null));
+  const ebitda = withCosts(val("ebitda"));
+  const ebitdaM = withCosts(val("margen_ebitda"));
   const ccc = val("ccc").map((v) => (v !== null && Math.abs(v) <= 1500 ? v : null));
-  const cccNow = num(byYear[currentYear]?.values.ccc);
 
-  // Indicadores de rentabilidad y liquidez en el tiempo
-  const lineTitle = (name: string, vals: (number | null)[], fmt: (v: number) => string) => {
-    const idx = vals.map((v, i) => (v !== null ? i : -1)).filter((i) => i >= 0);
-    if (idx.length === 0) return name;
-    const f = idx[0];
-    const l = idx[idx.length - 1];
-    const vf = vals[f] as number;
-    const vl = vals[l] as number;
-    return f === l ? `${name}: ${fmt(vl)} en ${cats[l]}` : `${name} ${fmt(vl)} en ${cats[l]}, frente a ${fmt(vf)} en ${cats[f]}`;
+  const lastOf = (arr: (number | null)[], fmt: (v: number) => string) => {
+    for (let i = arr.length - 1; i >= 0; i--) {
+      const v = arr[i];
+      if (v !== null) return `${fmt(v)} · ${trend[i].anio}`;
+    }
+    return undefined;
   };
-  const roeS = val("roe");
-  const roaS = val("roa");
-  // Sin costos reportados el EBITDA queda sobrestimado (márgenes de 100%): esos años se omiten.
-  const ebitdaS = val("margen_ebitda").map((v, i) => ((trend[i].metrics.costos_ventas_prod ?? 0) > 0 ? v : null));
-  const liqS = val("liquidez_corriente");
-  const ratioCards: { key: string; name: string; title: string; sub: string; unit: Unit; values: (number | null)[] }[] = [
-    {
-      key: "roe",
-      name: "ROE",
-      title: lineTitle("El ROE", roeS, (v) => formatPercent(v, 1)),
-      sub: "Rentabilidad del patrimonio: utilidad neta ÷ patrimonio",
-      unit: "percent" as Unit,
-      values: roeS,
-    },
-    {
-      key: "roa",
-      name: "ROA",
-      title: lineTitle("El ROA", roaS, (v) => formatPercent(v, 1)),
-      sub: "Rentabilidad de los activos: utilidad neta ÷ activos",
-      unit: "percent" as Unit,
-      values: roaS,
-    },
+  const pct1 = (v: number) => formatPercent(v, 1);
+  const dias = (v: number) => `${formatNumber(v, 0)} d`;
+  const veces = (v: number) => formatNumber(v, 2);
+
+  type Metric = {
+    key: string;
+    title: string;
+    what: string;
+    formula: string;
+    unit: Unit;
+    values: (number | null)[];
+    fmt: (v: number) => string;
+    series?: LSeries[];
+  };
+  const metrics: Metric[] = [
     {
       key: "ebitda",
-      name: "Margen EBITDA",
-      title: lineTitle("El margen EBITDA", ebitdaS, (v) => formatPercent(v, 1)),
-      sub: "EBITDA aproximado ÷ ingresos (solo años con balance NIIF)",
-      unit: "percent" as Unit,
-      values: ebitdaS,
+      title: "EBITDA y EBITDA Margin",
+      what: "Mide la rentabilidad operativa antes de intereses, impuestos, depreciación y amortización (aproximado: la depreciación reportada puede ser incompleta).",
+      formula: "EBITDA ÷ Ingresos × 100",
+      unit: "percent",
+      values: ebitdaM,
+      fmt: pct1,
+      series: [
+        { name: "EBITDA (US$)", color: C.gray, values: ebitda, unit: "money" },
+        { name: "EBITDA Margin", color: C.blue, values: ebitdaM, unit: "percent" },
+      ],
     },
     {
-      key: "liq",
-      name: "Razón corriente",
-      title: lineTitle("La razón corriente", liqS, (v) => formatNumber(v, 2)),
-      sub: "Activo corriente ÷ pasivo corriente: veces que cubre sus deudas de corto plazo",
-      unit: "ratio" as Unit,
-      values: liqS,
+      key: "fcf",
+      title: "Free Cash Flow (FCF)",
+      what: "¿Cuánto efectivo genera realmente el negocio después de las inversiones necesarias? (estimado con variaciones del balance).",
+      formula: "Flujo de caja operativo − CAPEX (aquí: utilidad neta − Δ capital de trabajo − Δ activos fijos)",
+      unit: "money",
+      values: val("fcf"),
+      fmt: (v) => formatCompactMoney(v),
     },
-  ].filter((c) => has(c.values));
+    {
+      key: "roic",
+      title: "ROIC – Return on Invested Capital",
+      what: "Permite evaluar si el negocio está generando retornos superiores al costo del capital invertido.",
+      formula: "Utilidad operativa × (1 − 25 %) ÷ (Deuda financiera + Patrimonio − Efectivo)",
+      unit: "percent",
+      values: val("roic"),
+      fmt: pct1,
+    },
+    {
+      key: "dso",
+      title: "DSO – Days Sales Outstanding",
+      what: "¿Cuántos días tarda la empresa en convertir sus ventas en efectivo?",
+      formula: "365 ÷ Rotación de cartera (cuentas por cobrar sobre ventas totales × días)",
+      unit: "days",
+      values: days("per_med_cobranza"),
+      fmt: dias,
+    },
+    {
+      key: "dio",
+      title: "DIO – Days Inventory Outstanding",
+      what: "¿Cuántos días permanece el inventario antes de venderse?",
+      formula: "Inventario ÷ Costo de ventas × días",
+      unit: "days",
+      values: days("dio"),
+      fmt: dias,
+    },
+    {
+      key: "dpo",
+      title: "DPO – Days Payable Outstanding",
+      what: "¿Cuántos días tarda la empresa en pagar a sus proveedores?",
+      formula: "Cuentas por pagar ÷ Costo de ventas × días (la fuente no informa las compras)",
+      unit: "days",
+      values: days("per_med_pago"),
+      fmt: dias,
+    },
+    {
+      key: "ccc",
+      title: "Cash Conversion Cycle (CCC)",
+      what: "Mide cuánto tiempo permanece el capital atrapado en la operación.",
+      formula: "CCC = DSO + DIO − DPO",
+      unit: "days",
+      values: ccc,
+      fmt: dias,
+    },
+    {
+      key: "cr",
+      title: "Current Ratio",
+      what: "Mide la capacidad de cubrir obligaciones de corto plazo.",
+      formula: "Activos corrientes ÷ Pasivos corrientes",
+      unit: "ratio",
+      values: val("liquidez_corriente"),
+      fmt: veces,
+    },
+    {
+      key: "nd",
+      title: "Net Debt / EBITDA",
+      what: "Indicador clave para analizar el nivel de apalancamiento y capacidad de pago: años de EBITDA que tomaría pagar la deuda neta (negativo = más efectivo que deuda).",
+      formula: "(Deuda financiera − Efectivo) ÷ EBITDA",
+      unit: "ratio",
+      values: val("deuda_neta_ebitda"),
+      fmt: veces,
+    },
+  ];
+  const shown = metrics.filter((x) => has(x.values, 2));
+  const hidden = metrics.length - shown.length;
 
   const ranks = sorted
     .filter((f) => typeof f.posicion_general === "number" && f.posicion_general > 0 && f.anio <= currentYear)
     .slice(-8)
     .map((f) => ({ anio: f.anio, value: f.posicion_general as number }));
-  const emp = sorted
-    .filter((f) => (num(f.metrics.n_empleados) ?? 0) > 0 && f.anio <= currentYear)
-    .slice(-12)
-    .map((f) => ({ anio: f.anio, value: f.metrics.n_empleados as number }));
 
   const distItems: DistItem[] = [
     { key: "rent_neta_ventas", label: "Margen neto", dist: dist.rent_neta_ventas, fmt: (v) => formatRatioValue("rent_neta_ventas", v, 1), dir: "higher" },
@@ -170,7 +223,7 @@ export default function ResumenTab({
 
       {trend.length >= 2 && (
         <div className="grid items-start gap-4 lg:grid-cols-2 [&>*]:min-w-0">
-          <Card title={ivuTitle} sub="Cada línea tiene su propia escala; pasa el cursor por un punto para ver el valor de ese año">
+          <Card title={ivuTitle} sub="Ingresos y utilidad neta por año; cada línea tiene su propia escala">
             <LineInteractive
               categories={cats}
               events={EVENTS}
@@ -182,54 +235,30 @@ export default function ResumenTab({
               ]}
             />
           </Card>
-          {has(prod) && (
-            <Card
-              title={
-                pLast !== null && pChange !== null && first
-                  ? `Cada empleado genera ${formatCompactMoney(pLast)} en ingresos, ${formatPercent(Math.abs(pChange), 0)} ${pChange >= 0 ? "más" : "menos"} que en ${first.anio}`
-                  : "Productividad: ingresos por empleado"
-              }
-              sub="Ingresos por empleado, con su tendencia (línea punteada)"
-            >
+          {shown.map((x) => (
+            <Card key={x.key} title={x.title} sub={x.what} formula={x.formula} latest={lastOf(x.values, x.fmt)}>
               <LineInteractive
                 categories={cats}
-                trend
                 events={EVENTS}
-                unit="money"
-                series={[{ name: "Ingresos por empleado", color: C.blue, values: prod }]}
+                unit={x.unit}
+                stacked={!!x.series}
+                series={x.series ?? [{ name: x.title, color: C.blue, values: x.values }]}
               />
-            </Card>
-          )}
-          {ratioCards.map((c) => (
-            <Card key={c.key} title={c.title} sub={c.sub}>
-              <LineInteractive categories={cats} events={EVENTS} unit={c.unit} series={[{ name: c.name, color: C.blue, values: c.values }]} />
             </Card>
           ))}
-          {has(ccc, 1) && (
-            <Card
-              title={
-                cccNow !== null
-                  ? cccNow >= 0
-                    ? `El capital queda atrapado ${formatNumber(cccNow, 0)} días en la operación`
-                    : `Los proveedores financian ${formatNumber(Math.abs(cccNow), 0)} días de la operación`
-                  : "Ciclo de conversión de efectivo (CCC)"
-              }
-              sub="CCC = días de cobro + días de inventario − días de pago; disponible en los años con balance NIIF"
-            >
-              <LineInteractive
-                categories={cats}
-                events={EVENTS}
-                unit="days"
-                series={[{ name: "Ciclo de efectivo (CCC)", color: C.blue, values: ccc }]}
-              />
-            </Card>
-          )}
-          <RankCard ranks={ranks} universe={universe} />
-          <EmployeesCard points={emp} />
-          {segment}
         </div>
       )}
-      {trend.length < 2 && segment}
+      {hidden > 0 && (
+        <p className="text-xs text-muted">
+          {hidden === 1 ? "Un indicador no se muestra" : `${hidden} indicadores no se muestran`}: requieren balance NIIF (desde 2022) con datos
+          suficientes para esta empresa.
+        </p>
+      )}
+
+      <div className="grid items-start gap-4 lg:grid-cols-2 [&>*]:min-w-0">
+        <RankCard ranks={ranks} universe={universe} />
+        {segment}
+      </div>
 
       <DistributionChart items={distItems} groupLabel={groupLabel ?? "misma actividad"} n={benchN} />
 
@@ -240,18 +269,6 @@ export default function ResumenTab({
           2024 crisis energética).
         </p>
       )}
-
-      <div className="rounded-xl border border-border bg-surface p-4">
-        <h3 className="mb-3 text-sm font-semibold">Ficha de la empresa</h3>
-        <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-          {facts.map((f) => (
-            <div key={f.label}>
-              <dt className="text-[11px] uppercase tracking-wide text-muted">{f.label}</dt>
-              <dd className="mt-0.5 leading-snug">{f.value}</dd>
-            </div>
-          ))}
-        </dl>
-      </div>
     </div>
   );
 }
