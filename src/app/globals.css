@@ -549,3 +549,58 @@ body {
     transform: translateX(45vw);
   }
 }
+
+/* ───────────── /sucre: estética de internet del año 2000 ───────────── */
+.y2k {
+  background-color: #b8d8f0;
+  background-image: linear-gradient(45deg, #a6c9e6 25%, transparent 25%, transparent 75%, #a6c9e6 75%),
+    linear-gradient(45deg, #a6c9e6 25%, transparent 25%, transparent 75%, #a6c9e6 75%);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
+  color: #000;
+  font-family: Verdana, Tahoma, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.y2k ul { list-style: disc; }
+.y2k a { color: #0000ee; text-decoration: underline; }
+.y2k a:visited { color: #551a8b; }
+.y2k-wrap { max-width: 860px; margin: 0 auto; padding: 10px; }
+.y2k-marquee { overflow: hidden; white-space: nowrap; background: #000080; color: #ffff00; border: 2px outset #fff; padding: 3px 0; font-weight: bold; }
+.y2k-marquee span { display: inline-block; padding-left: 100%; animation: y2k-scroll 22s linear infinite; }
+@keyframes y2k-scroll { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+.y2k-title {
+  margin: 14px 0 4px; text-align: center; font: bold 34px/1.1 "Comic Sans MS", "Trebuchet MS", Impact, sans-serif;
+  background: linear-gradient(180deg, #ff0000, #ffcc00 45%, #00a000 55%, #0000ff);
+  -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-stroke: 1px #000;
+  filter: drop-shadow(3px 3px 0 #808080);
+}
+.y2k-sub { text-align: center; font-family: "Comic Sans MS", cursive; margin: 0 0 8px; }
+.y2k-blink { color: #f00; font-weight: bold; animation: y2k-blink 1s steps(2, start) infinite; }
+@keyframes y2k-blink { to { visibility: hidden; } }
+.y2k-rainbow { height: 6px; border: 0; margin: 10px 0; background: linear-gradient(90deg, #f00, #f80, #ff0, #0a0, #00f, #808, #f00); }
+.y2k-layout { display: grid; grid-template-columns: 170px 1fr; gap: 10px; align-items: start; }
+@media (max-width: 640px) { .y2k-layout { grid-template-columns: 1fr; } }
+.y2k-box { background: #fff; border: 3px ridge #808080; padding: 10px 12px; margin-bottom: 10px; }
+.y2k-box h2 { margin: 0 0 6px; font: bold 16px "Comic Sans MS", Verdana, sans-serif; color: #000080; border-bottom: 2px dotted #000080; }
+.y2k-side { background: #c0c0c0; border: 2px outset #fff; padding: 6px; }
+.y2k-btn {
+  display: block; width: 100%; text-align: center; margin-bottom: 6px; padding: 4px 6px; background: #c0c0c0; color: #000 !important;
+  border: 2px outset #fff; font: 12px Tahoma, Arial, sans-serif; text-decoration: none !important; cursor: pointer;
+}
+.y2k-btn:active { border-style: inset; }
+.y2k-tape { background: repeating-linear-gradient(45deg, #000 0 12px, #ffd800 12px 24px); color: #000; font-weight: bold; text-align: center; padding: 6px; border: 2px solid #000; }
+.y2k-tape b { background: #ffd800; padding: 0 8px; }
+.y2k-counter { display: block; white-space: nowrap; }
+.y2k-counter span { display: inline-block; background: #000; color: #0f0; font: bold 14px "Courier New", monospace; padding: 1px 3px; margin: 0 1px; border: 1px inset #888; }
+.y2k-input { width: 100%; box-sizing: border-box; border: 2px inset #808080; padding: 4px; font: 15px "Courier New", monospace; background: #fff; color: #000; }
+.y2k table.y2k-table { width: 100%; border-collapse: collapse; }
+.y2k .y2k-table th { background: #000080; color: #fff; padding: 3px 6px; border: 1px solid #000; }
+.y2k .y2k-table td { padding: 3px 6px; border: 1px solid #808080; text-align: right; }
+.y2k .y2k-table tr:nth-child(even) td { background: #eef; }
+.y2k-badge { display: inline-block; border: 2px outset #fff; background: #c0c0c0; padding: 2px 6px; font: 11px Tahoma, sans-serif; margin: 2px; }
+.y2k-quote { background: #ffffcc; border: 2px dashed #f00; padding: 8px 10px; }
+@media (prefers-reduced-motion: reduce) {
+  .y2k-marquee span { animation: none; padding-left: 0; }
+  .y2k-blink { animation: none; }
+}

@@ -1,3 +1,13 @@
+// Inflación acumulada entre dos años (fracción: 0,5 = 50 %), encadenando la inflación anual de from+1 hasta to.
+// Si `to` supera el último año disponible, se acumula hasta el último dato.
+export function cumulativeInflation(from: number, to: number): { value: number; lastYear: number } {
+  const last = Math.max(...Object.keys(INFLATION).map(Number));
+  const end = Math.min(to, last);
+  let f = 1;
+  for (let y = from + 1; y <= end; y++) f *= 1 + INFLATION[y] / 100;
+  return { value: f - 1, lastYear: end };
+}
+
 // Inflación anual del Ecuador (precios al consumidor, promedio anual, %).
 // Fuente: Banco Mundial, indicador FP.CPI.TOTL.ZG (consultado en septiembre de 2026).
 export const INFLATION: Record<number, number> = {
