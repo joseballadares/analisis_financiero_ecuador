@@ -9,6 +9,7 @@ export const RELEASES: Release[] = [
     title: "Radar Estratégico más compacto",
     changes: [
       "La tabla del Radar Estratégico muestra cada señal en una sola línea (etiqueta y detalle) y da más ancho a esa columna; las filas miden menos de la mitad.",
+      "Nueva columna con el puesto en el Radar (más señales primero; en empates, mayores ingresos) junto al puesto por ingresos.",
     ],
   },
   {

@@ -7,7 +7,7 @@ import { SIGNALS, type Interesting, type SignalId } from "@/lib/interestingMeta"
 import { SignalChip } from "@/components/home/FeaturedCard";
 import SortIcon from "@/components/SortIcon";
 
-type SortKey = "senales" | "rank" | "nombre" | "ingresos" | "margen" | "roe";
+type SortKey = "radar" | "senales" | "rank" | "nombre" | "ingresos" | "margen" | "roe";
 const PAGE = 40;
 
 // Lista del Radar Estratégico: se puede acotar por señal y ordenar con las flechas; cada fila explica por qué aparece.
@@ -21,15 +21,18 @@ export default function InterestingTable({
   counts: Record<SignalId, number>;
 }) {
   const [active, setActive] = useState<SignalId[]>([]);
-  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "senales", dir: -1 });
+  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "radar", dir: 1 });
   const [page, setPage] = useState(0);
+
+  const radarOf = useMemo(() => new Map(rows.map((r, i) => [r.ruc, i + 1])), [rows]);
 
   const filtered = useMemo(() => {
     const list = rows.filter((r) => {
       if (active.length && !active.every((id) => r.signals.some((s) => s.id === id))) return false;
       return true;
     });
-    const val = (r: Interesting): number | string | null => (sort.key === "senales" ? r.signals.length : r[sort.key]);
+    const val = (r: Interesting): number | string | null =>
+      sort.key === "senales" ? r.signals.length : sort.key === "radar" ? (radarOf.get(r.ruc) ?? null) : r[sort.key];
     return [...list].sort((a, b) => {
       const x = val(a);
       const y = val(b);
@@ -39,7 +42,7 @@ export default function InterestingTable({
       const c = typeof x === "string" ? x.localeCompare(y as string, "es") : x - (y as number);
       return (c || a.rank - b.rank) * sort.dir;
     });
-  }, [rows, active, sort]);
+  }, [rows, active, sort, radarOf]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE));
   const cur = Math.min(page, pages - 1);
@@ -49,7 +52,7 @@ export default function InterestingTable({
     setPage(0);
   };
   const setSortKey = (key: SortKey) => {
-    setSort((s) => (s.key === key ? { key, dir: (s.dir * -1) as 1 | -1 } : { key, dir: key === "nombre" || key === "rank" ? 1 : -1 }));
+    setSort((s) => (s.key === key ? { key, dir: (s.dir * -1) as 1 | -1 } : { key, dir: key === "nombre" || key === "rank" || key === "radar" ? 1 : -1 }));
     setPage(0);
   };
   const dirOf = (k: SortKey): 0 | 1 | -1 => (sort.key === k ? sort.dir : 0);
@@ -80,24 +83,31 @@ export default function InterestingTable({
       )}
       <p className="mt-3 text-sm text-muted">
         {filtered.length.toLocaleString("es-EC")} de {rows.length.toLocaleString("es-EC")} empresas
-        {active.length > 1 ? " que cumplen todas las señales elegidas" : ""}
+        {active.length > 1 ? " que cumplen todas las señales elegidas" : ""}. <strong className="font-medium text-foreground">Puesto radar:</strong>{" "}
+        más señales primero y, en empates, mayores ingresos; <strong className="font-medium text-foreground">puesto ingresos:</strong> lugar por
+        ingresos operacionales entre todas las empresas.
       </p>
 
       <div className="mt-3 overflow-x-auto rounded-xl border border-border">
         <table className="w-full min-w-[900px] text-sm">
           <thead>
             <tr className="border-b border-border bg-surface text-left">
-              <th className={th}>
-                <span className={sortable} onClick={() => setSortKey("rank")}>
-                  # <SortIcon dir={dirOf("rank")} />
+              <th className={`${th} !px-2`} title="Puesto en el Radar Estratégico: más señales primero; en caso de empate, mayores ingresos">
+                <span className={sortable} onClick={() => setSortKey("radar")}>
+                  <span className="leading-tight">Puesto<br />radar</span> <SortIcon dir={dirOf("radar")} />
                 </span>
               </th>
-              <th className={`${th} w-[24%]`}>
+              <th className={`${th} !px-2`} title="Puesto por ingresos operacionales entre todas las empresas">
+                <span className={sortable} onClick={() => setSortKey("rank")}>
+                  <span className="leading-tight">Puesto<br />ingresos</span> <SortIcon dir={dirOf("rank")} />
+                </span>
+              </th>
+              <th className={`${th} w-[19%]`}>
                 <span className={sortable} onClick={() => setSortKey("nombre")}>
                   Empresa <SortIcon dir={dirOf("nombre")} />
                 </span>
               </th>
-              <th className={`${th} w-[52%]`}>
+              <th className={`${th} w-[53%]`}>
                 <span className={sortable} onClick={() => setSortKey("senales")}>
                   Por qué está en el radar <SortIcon dir={dirOf("senales")} />
                 </span>
@@ -122,7 +132,8 @@ export default function InterestingTable({
           <tbody>
             {shown.map((r) => (
               <tr key={r.ruc} className="border-b border-border align-top last:border-b-0 hover:bg-surface">
-                <td className="px-3 py-2 tabular-nums text-muted">{r.rank}</td>
+                <td className="px-2 py-2 text-center font-semibold tabular-nums text-brand">{radarOf.get(r.ruc)}</td>
+                <td className="px-2 py-2 text-center tabular-nums text-muted">{r.rank}</td>
                 <td className="px-3 py-2">
                   <Link href={`/empresa/${r.ruc}`} className="font-medium hover:text-brand hover:underline">
                     {r.nombre}
@@ -143,7 +154,7 @@ export default function InterestingTable({
             ))}
             {shown.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-muted">
+                <td colSpan={7} className="px-4 py-8 text-center text-muted">
                   Ninguna empresa cumple los filtros.
                 </td>
               </tr>
