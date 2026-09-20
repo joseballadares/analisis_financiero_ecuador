@@ -104,7 +104,7 @@ export default async function EmpresasAntiguasPage({ searchParams }: { searchPar
   const smallBand = bandRows.find((b) => b.n >= 200);
   if (bigBand && smallBand && bigBand.key !== smallBand.key) {
     highlights.push(
-      `Entre las empresas que venden más de US$ 100 millones, el ${pct1(bigBand.n50 / Math.max(bigBand.n, 1))} tiene 50 años o más; en el tramo de ${smallBand.key}, el ${pct1(smallBand.n50 / Math.max(smallBand.n, 1))}.`,
+      `Entre las empresas que venden más de US$ 100 millones, el ${pct1(bigBand.n50 / Math.max(bigBand.n, 1))} tiene 50 años o más; en el tramo «${smallBand.key}», el ${pct1(smallBand.n50 / Math.max(smallBand.n, 1))}.`,
     );
   }
   highlights.push(
