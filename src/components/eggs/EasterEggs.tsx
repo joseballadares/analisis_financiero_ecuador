@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { EGG_EVENT, markSeen, seenThisSession, type EggDetail, type SectorKind } from "@/lib/eggs";
 import { HesoyamOverlay, SectorOverlay, makeBills, type Bill } from "@/components/eggs/Overlays";
+import { NAME_ART } from "@/lib/eggs/consoleArt";
 
 type Overlay = { id: number; kind: "hesoyam"; bills: Bill[] } | { id: number; kind: SectorKind };
 type Toast = { id: number; text: string };
@@ -15,6 +16,13 @@ export default function EasterEggs() {
   const [toast, setToast] = useState<Toast | null>(null);
 
   useEffect(() => {
+    // Mensaje escondido para quien abra la consola del navegador (una sola vez por carga).
+    const w = window as unknown as { __efConsole?: boolean };
+    if (!w.__efConsole) {
+      w.__efConsole = true;
+      console.log(`%c${NAME_ART}`, "color:#2bb894;font-family:monospace;font-weight:bold");
+    }
+
     let seq = 0;
     let overlayTimer: ReturnType<typeof setTimeout> | undefined;
     let toastTimer: ReturnType<typeof setTimeout> | undefined;

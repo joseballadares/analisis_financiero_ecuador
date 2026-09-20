@@ -4,6 +4,16 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const RELEASES: Release[] = [
   {
+    version: "0.25",
+    date: "2026-09-20",
+    title: "Nuevo pie de página y página Acerca de ampliada",
+    changes: [
+      "Nuevo pie de página en todo el sitio: descripción, fuente de los datos y mapa de secciones (Plataforma, Producto e Información).",
+      "Acerca de: propósito informativo del proyecto, qué viene (mercado de valores, compras públicas), principios y aviso legal.",
+      "Otra sorpresa escondida por el sitio. ¿La encuentras?",
+    ],
+  },
+  {
     version: "0.24",
     date: "2026-09-20",
     title: "Más sorpresas",

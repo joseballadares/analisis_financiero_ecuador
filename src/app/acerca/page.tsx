@@ -1,13 +1,13 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Metodología — Ecuador Financiero",
-  description: "De dónde vienen los datos, cómo se calculan los ratios y qué límites tienen.",
+  title: "Acerca de — Ecuador Financiero",
+  description: "Qué es Ecuador Financiero, qué viene, de dónde vienen los datos, cómo se calculan los ratios y qué límites tienen.",
 };
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ id, title, children }: { id?: string; title: string; children: React.ReactNode }) {
   return (
-    <section className="mt-10">
+    <section id={id} className="mt-10 scroll-mt-20">
       <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
       <div className="mt-3 space-y-3 text-[15px] leading-relaxed text-muted [&_strong]:text-foreground [&_li]:ml-5 [&_li]:list-disc">
         {children}
@@ -19,11 +19,64 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function AcercaPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-10">
-      <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Metodología y fuentes</h1>
+      <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Acerca de Ecuador Financiero</h1>
       <p className="mt-3 text-muted">
-        Ecuador Financiero es un proyecto independiente. Esta página explica de dónde salen los datos, qué
-        correcciones les hacemos y qué límites tienen, para que sepas cuánta confianza darle a cada cifra.
+        Un proyecto independiente para leer, comparar y entender las cifras de las empresas del Ecuador con datos públicos.
       </p>
+
+      <Section title="¿Qué es este sitio?">
+        <p>
+          Ecuador Financiero se hizo con un <strong>fin informativo</strong>: reunir en un solo lugar la información financiera que las
+          compañías ecuatorianas ya reportan a la Superintendencia de Compañías, Valores y Seguros y presentarla de forma clara, con ratios,
+          gráficos y comparaciones con empresas similares.
+        </p>
+        <p>
+          Todas las cifras de cada empresa provienen de <strong>datos públicos</strong>. No hay información privada, ni acceso a cuentas, ni
+          datos personales de usuarios: cualquiera puede consultar una empresa sin registrarse.
+        </p>
+        <p>
+          Pensamos en quien necesita conocer mejor una empresa o un sector: estudiantes, periodistas, emprendedores, proveedores, analistas
+          y curiosos de la economía.
+        </p>
+      </Section>
+
+      <Section title="Qué encuentras hoy">
+        <ul>
+          <li>La <strong>ficha y el resumen</strong> de cada empresa: ingresos, utilidad, activos, patrimonio y su posición en el ranking.</li>
+          <li><strong>Estados financieros</strong> línea por línea (2019–2025) con tendencia por cuenta, y más de 30 <strong>ratios</strong> desde 2008.</li>
+          <li><strong>Comparables</strong>: cada empresa frente a las más parecidas en tamaño y actividad, con semáforo.</li>
+          <li>Una pestaña de <strong>alertas y crédito</strong> con un puntaje orientativo y banderas de atención.</li>
+          <li>Un <strong>informe profesional en PDF</strong> por empresa.</li>
+          <li>Páginas de <strong>ranking, sectores y provincias</strong>, y el Radar Estratégico.</li>
+        </ul>
+      </Section>
+
+      <Section title="Qué viene">
+        <p>
+          En el futuro se irá agregando más información pública: <strong>mercado de valores</strong>,{" "}
+          <strong>compras públicas</strong> (contratación pública) y otras fuentes oficiales que ayuden a completar el retrato de cada
+          empresa. Son planes, no compromisos con fechas: se publicarán cuando los datos estén verificados.
+        </p>
+      </Section>
+
+      <Section title="Principios">
+        <ul>
+          <li><strong>Fuentes públicas y citadas.</strong> Decimos de dónde sale cada dato.</li>
+          <li>
+            <strong>Transparencia metodológica.</strong> Explicamos abajo cómo se calcula cada ratio y qué correcciones aplicamos, incluidos los
+            límites conocidos.
+          </li>
+          <li><strong>Independencia.</strong> No tenemos afiliación con la Superintendencia ni con ninguna empresa de las que aparecen.</li>
+          <li><strong>Neutralidad.</strong> Las alertas y los puntajes describen cifras; no juzgan a las empresas ni a las personas.</li>
+        </ul>
+      </Section>
+
+      <div id="metodologia" className="scroll-mt-20">
+        <h2 className="mt-14 border-t border-border pt-8 text-2xl font-semibold tracking-tight">Metodología y fuentes</h2>
+        <p className="mt-3 text-muted">
+          De dónde salen los datos, qué correcciones les hacemos y qué límites tienen, para que sepas cuánta confianza darle a cada cifra.
+        </p>
+      </div>
 
       <Section title="Fuente de los datos">
         <p>
@@ -158,9 +211,7 @@ export default function AcercaPage() {
             coinciden en ingresos con menos de 0,1% de diferencia.
           </li>
           <li>
-            Contra los estados auditados públicos de 11 empresas y contra la plataforma rikuna (30 empresas), los
-            totales coinciden; en ella encontramos errores propios (ingresos 2019–2021 duplicados y signos
-            perdidos) que aquí no se repiten.
+            Contra los estados auditados públicos de 11 empresas, los totales coinciden.
           </li>
         </ul>
         <p>
@@ -180,10 +231,34 @@ export default function AcercaPage() {
             Los ratios operacionales dependen de que la empresa declare bien su costo de ventas y sus gastos.
           </li>
           <li>
-            No usamos información macroeconómica, de contratación pública ni datos del contribuyente del SRI.
+            Las cifras de cada empresa no incorporan información macroeconómica, de contratación pública ni datos del contribuyente del SRI (por ahora).
           </li>
-          <li>Esto no es asesoría financiera ni de inversión y no tiene afiliación oficial con la Superintendencia.</li>
         </ul>
+      </Section>
+
+      <Section id="aviso" title="Aviso legal">
+        <p>
+          Esta página se hizo con <strong>fines informativos</strong> y usa datos públicos. Puede contener errores, omisiones o datos
+          desactualizados; los del último año pueden cambiar mientras la Superintendencia recibe balances. Verifica siempre la información en la
+          fuente oficial antes de usarla.
+        </p>
+        <p>
+          Nada de lo publicado aquí es una recomendación de compra, venta o inversión, ni asesoría financiera, legal, contable o tributaria. Los
+          puntajes, alertas y comparables son herramientas de lectura, no dictámenes. Ecuador Financiero no tiene afiliación oficial con la
+          Superintendencia de Compañías, Valores y Seguros ni con las empresas mencionadas, y no se responsabiliza por decisiones tomadas con
+          base en esta información.
+        </p>
+        <p className="pt-2 text-foreground">
+          Esta página es solo informativa y no ofrece consejos de inversión ni asesoría financiera reales.{" "}
+          <a
+            href="https://www.youtube.com/watch?v=LtFyP0qy9XU"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="italic text-foreground no-underline hover:underline hover:decoration-dotted"
+          >
+            It&apos;s just money.
+          </a>
+        </p>
       </Section>
 
       <p className="mt-10 text-sm">

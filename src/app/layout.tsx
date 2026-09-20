@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { CURRENT_VERSION } from "@/lib/versions";
 import ThemeToggle from "@/components/ThemeToggle";
 import EasterEggs from "@/components/eggs/EasterEggs";
+import SiteFooter from "@/components/SiteFooter";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -66,19 +66,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           </div>
         </header>
         <main className="flex-1">{children}</main>
-        <footer className="border-t border-border mt-16">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 text-xs text-muted">
-            Datos: Superintendencia de Compañías, Valores y Seguros del Ecuador. Este sitio
-            es un proyecto independiente de análisis financiero, sin afiliación oficial.{" "}
-            <Link href="/acerca" className="underline hover:text-foreground">
-              Metodología y fuentes
-            </Link>
-            .{" "}
-            <Link href="/versiones" className="underline hover:text-foreground">
-              v{CURRENT_VERSION.version}
-            </Link>
-          </div>
-        </footer>
+        <SiteFooter />
         <EasterEggs />
       </body>
     </html>

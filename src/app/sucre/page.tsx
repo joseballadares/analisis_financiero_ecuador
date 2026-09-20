@@ -72,14 +72,15 @@ export default function SucrePage() {
                 <li>El <b>22 de marzo de 1884</b> el Ecuador adoptó el sucre como unidad monetaria, en lugar del peso.</li>
                 <li>Se llama así por <b>Antonio José de Sucre</b>.</li>
                 <li>En 1999 perdió cerca de dos tercios de su valor frente al dólar.</li>
-                <li>El <b>9 de enero de 2000</b> el presidente Jamil Mahuad anunció que el dólar reemplazaría al sucre.</li>
+                <li>A inicios de <b>enero de 2000</b> el presidente Jamil Mahuad anunció que el dólar reemplazaría al sucre (el 9 según Wikipedia; el Banco Central lo registra el 10).</li>
                 <li>El tipo de cambio quedó fijado en <b>25.000 sucres por dólar</b>.</li>
                 <li>En <b>septiembre de 2000</b> el sucre dejó de ser moneda de curso legal; se pudo canjear en el Banco Central hasta el 30 de marzo de 2001.</li>
               </ul>
               <p style={{ margin: "6px 0 0", fontSize: 12 }}>
                 Fuentes:{" "}
                 <a href={WIKI_ES} target="_blank" rel="noopener noreferrer">Wikipedia (es)</a> ·{" "}
-                <a href={WIKI_EN} target="_blank" rel="noopener noreferrer">Wikipedia (en)</a>
+                <a href={WIKI_EN} target="_blank" rel="noopener noreferrer">Wikipedia (en)</a> ·{" "}
+                <a href="https://contenido.bce.fin.ec/documentos/PublicacionesNotas/Catalogo/Memoria/2000/1raparte.pdf" target="_blank" rel="noopener noreferrer">Banco Central, Memoria 2000</a>
               </p>
             </div>
 

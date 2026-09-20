@@ -194,6 +194,11 @@ export default function RiskTab({
           </ul>
         )}
       </section>
+
+      <p className="pt-6 text-[10px] leading-snug text-muted opacity-70">
+        Esto es informativo: no es un sistema real ni efectivo. No fue hecho por un analista cuantitativo de riesgo llamado Yang que ganó una competencia
+        de matemáticas en China.
+      </p>
     </div>
   );
 }
