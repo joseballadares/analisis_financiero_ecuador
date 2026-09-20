@@ -4,7 +4,9 @@ import type { YearRatios } from "@/lib/star";
 import { formatCompactMoney, formatNumber, formatPercent, formatRatioValue } from "@/lib/format";
 import { C, EVENTS } from "@/components/charts";
 import LineInteractive, { type Unit, type LSeries } from "@/components/LineInteractive";
-import { RankBanner, SixTiles, VerticalEquations, type Amounts } from "@/components/SummaryBlocks";
+import { VerticalEquations, type Amounts } from "@/components/SummaryBlocks";
+import BarsInteractive from "@/components/BarsInteractive";
+import FinancialHighlights from "@/components/FinancialHighlights";
 import { RankCard } from "@/components/TrajectoryCards";
 import DistributionChart, { type DistItem } from "@/components/DistributionChart";
 
@@ -40,6 +42,8 @@ export default function ResumenTab({
   dist,
   groupLabel,
   benchN,
+  cashByYear,
+  segmentLabel,
 }: {
   financials: CompanyYearFinancial[];
   byYear: Record<number, YearRatios>;
@@ -49,6 +53,8 @@ export default function ResumenTab({
   dist: Record<string, RatioDist>;
   groupLabel: string | null;
   benchN: number;
+  cashByYear: Record<number, number>;
+  segmentLabel: string;
 }) {
   const sorted = [...financials].sort((a, b) => a.anio - b.anio);
   const trend = sorted
@@ -73,6 +79,16 @@ export default function ResumenTab({
     ingresos: num(m.ingresos_ventas),
     utilidad: num(m.utilidad_neta),
   };
+
+  // Barras pequeñas: últimos 8 años
+  const barRows = trend.slice(-8);
+  const barYears = barRows.map((f) => f.anio);
+  const barCats = barYears.map(String);
+  const barAct = barRows.map((f) => num(f.metrics.activos));
+  const barPas = barRows.map((f) => (num(f.metrics.activos) !== null && num(f.metrics.patrimonio) !== null ? (f.metrics.activos as number) - (f.metrics.patrimonio as number) : null));
+  const barCash = barYears.map((y) => (typeof cashByYear[y] === "number" ? cashByYear[y] : null));
+  const barIng = barRows.map((f) => num(f.metrics.ingresos_ventas));
+  const barUti = barRows.map((f) => num(f.metrics.utilidad_neta));
 
   // Ingresos vs utilidad neta
   const ingS = met("ingresos_ventas");
@@ -217,9 +233,47 @@ export default function ResumenTab({
 
   return (
     <div className="space-y-5">
-      <SixTiles a={amounts} />
-      <RankBanner year={currentYear} rank={cur?.posicion_general ?? null} universe={universe[currentYear] ?? null} />
-      <VerticalEquations year={currentYear} a={amounts} />
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0 space-y-5">
+          <VerticalEquations year={currentYear} a={amounts} />
+          {barYears.length >= 2 && (
+            <div className="grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
+              <Card title="Activos, pasivos y efectivo" sub="Cuánto tiene, cuánto debe y cuánto tiene en caja, por año">
+                <BarsInteractive
+                  categories={barCats}
+                  series={[
+                    { name: "Activos", color: C.blue, values: barAct },
+                    { name: "Pasivos", color: C.gray, values: barPas },
+                    { name: "Efectivo", color: C.blueSoft, values: barCash },
+                  ]}
+                />
+              </Card>
+              <Card title="Ingresos y utilidad neta" sub="Cuánto vende y cuánto le queda, por año">
+                <BarsInteractive
+                  categories={barCats}
+                  series={[
+                    { name: "Ingresos", color: C.gray, values: barIng },
+                    { name: "Utilidad neta", color: C.blue, values: barUti },
+                  ]}
+                />
+              </Card>
+            </div>
+          )}
+          <div className="grid items-start gap-4 sm:grid-cols-2 [&>*]:min-w-0">
+            <RankCard ranks={ranks} universe={universe} />
+            {segment}
+          </div>
+        </div>
+        <FinancialHighlights
+          year={currentYear}
+          m={m}
+          prevM={sorted.find((f) => f.anio === currentYear - 1)?.metrics}
+          values={byYear[currentYear]?.values ?? {}}
+          cash={cashByYear[currentYear] ?? null}
+          segment={segmentLabel}
+          rankText={cur?.posicion_general ? `#${cur.posicion_general.toLocaleString("es-EC")} de ${(universe[currentYear] ?? 0).toLocaleString("es-EC")}` : null}
+        />
+      </div>
 
       {trend.length >= 2 && (
         <div className="grid items-start gap-4 lg:grid-cols-2 [&>*]:min-w-0">
@@ -254,11 +308,6 @@ export default function ResumenTab({
           suficientes para esta empresa.
         </p>
       )}
-
-      <div className="grid items-start gap-4 lg:grid-cols-2 [&>*]:min-w-0">
-        <RankCard ranks={ranks} universe={universe} />
-        {segment}
-      </div>
 
       <DistributionChart items={distItems} groupLabel={groupLabel ?? "misma actividad"} n={benchN} />
 

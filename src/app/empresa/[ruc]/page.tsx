@@ -148,6 +148,10 @@ export default async function EmpresaPage({
                   dist={dist}
                   groupLabel={peerGroup ? `${peerGroup.levelLabel} (CIIU ${peerGroup.prefix})` : null}
                   benchN={peerGroup?.benchmark.n ?? 0}
+                  cashByYear={Object.fromEntries(
+                    niifRows.filter((r) => typeof r.data["10101"] === "number").map((r) => [r.anio, r.data["10101"] as number]),
+                  )}
+                  segmentLabel={segmentName(current.cod_segmento)}
                   segment={
                     segmentShare && ownIngresos > 0 ? (
                       <SegmentCard

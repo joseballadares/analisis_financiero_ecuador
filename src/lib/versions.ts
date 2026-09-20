@@ -4,6 +4,16 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const RELEASES: Release[] = [
   {
+    version: "0.21",
+    date: "2026-09-19",
+    title: "Resumen con datos clave y barras pequeñas",
+    changes: [
+      "Debajo de la estructura del balance y del resultado, dos gráficos de barras pequeños por año: activos, pasivos y efectivo; e ingresos y utilidad neta, con cuadro flotante.",
+      "Nuevo panel lateral de Datos clave (estilo Financial Highlights): ejercicio, rentabilidad, eficiencia, resultados, balance, flujo y ciclo de efectivo.",
+      "Se retiran las seis tarjetas y la franja del ranking del inicio del Resumen, porque repetían lo que muestran la estructura y el panel de datos clave.",
+    ],
+  },
+  {
     version: "0.20",
     date: "2026-09-19",
     title: "Radar Estratégico más compacto",
