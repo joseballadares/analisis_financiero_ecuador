@@ -6,12 +6,24 @@ import {
   type Company,
   type CompanyYearFinancial,
 } from "@/lib/db";
-import { getCatalogNames, getCiiuDescription, getCompanyBalanceRows, getRankingUniverse, getSegmentShare } from "@/lib/queries";
+import {
+  getCatalogNames,
+  getCiiuDescription,
+  getCompanyBalanceRows,
+  getRankingUniverse,
+  getSegmentShare,
+  persisted,
+} from "@/lib/queries";
 import { fillFromBalance, needsBalanceFill, isInactive } from "@/lib/derived";
 import { ratiosByYear } from "@/lib/star";
 import { creditScore, riskFlags } from "@/lib/risk";
 
 type Awaited2<T> = T extends Promise<infer U> ? U : T;
+
+// Los pares y la participacion en el segmento son las consultas mas pesadas del perfil (barren miles de empresas
+// del mismo CIIU). Se guardan en la base (kv_cache) por empresa y anio: solo cambian con una nueva carga de datos.
+// Subir este prefijo (co1 -> co2) tras recargar datos o cambiar la logica de getPeerGroup/getSegmentShare.
+const COMPANY_CACHE_V = "co1";
 
 // Todo lo que necesitan el perfil web y el informe PDF sobre una empresa y un año, calculado una sola vez.
 export type CompanyBundle = Awaited2<ReturnType<typeof buildBundle>>;
@@ -53,7 +65,9 @@ async function buildBundle(company: Company, financials: CompanyYearFinancial[],
   const [balanceRows, segmentShare, universe, ciiuDesc] = await Promise.all([
     getCompanyBalanceRows(company.expediente),
     current.ciiu_n6 && !inactive
-      ? getSegmentShare({ ciiuN6: current.ciiu_n6, anio: current.anio, ingresos: ownIngresos })
+      ? persisted(`${COMPANY_CACHE_V}:seg:${company.expediente}:${current.anio}`, () =>
+          getSegmentShare({ ciiuN6: current.ciiu_n6 as string, anio: current.anio, ingresos: ownIngresos }),
+        )
       : Promise.resolve(null),
     getRankingUniverse(),
     getCiiuDescription(current.ciiu_n6),
@@ -65,13 +79,15 @@ async function buildBundle(company: Company, financials: CompanyYearFinancial[],
   for (const [k, v] of Object.entries(byYear[current.anio]?.values ?? {})) {
     if (typeof v === "number" && Number.isFinite(v)) ratioValues[k] = v;
   }
-  const peerGroup = await getPeerGroup({
-    expediente: company.expediente,
-    anio: current.anio,
-    ciiuN6: current.ciiu_n6,
-    metrics: m,
-    ratioValues,
-  });
+  const peerGroup = await persisted(`${COMPANY_CACHE_V}:peer:${company.expediente}:${current.anio}`, () =>
+    getPeerGroup({
+      expediente: company.expediente,
+      anio: current.anio,
+      ciiuN6: current.ciiu_n6,
+      metrics: m,
+      ratioValues,
+    }),
+  );
   const tableYears = filled
     .map((f) => f.anio)
     .filter((y) => y <= current.anio && y > current.anio - 8)

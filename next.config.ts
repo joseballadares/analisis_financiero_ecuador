@@ -13,6 +13,9 @@ const cdn = (sMaxAge: number, swr: number) => [
 ];
 
 const nextConfig: NextConfig = {
+  // El codigo del navegador sale minificado y sin mapas de origen; ademas se oculta la cabecera X-Powered-By.
+  productionBrowserSourceMaps: false,
+  poweredByHeader: false,
   serverExternalPackages: ["@react-pdf/renderer"],
   async headers() {
     return [

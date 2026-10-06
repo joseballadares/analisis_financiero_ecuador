@@ -1,5 +1,4 @@
 import type { CompanyBundle } from "@/lib/companyData";
-import { CURRENT_VERSION } from "@/lib/versions";
 import { isNum } from "@/lib/chartMath";
 
 // El informe muestra el historial desde 2019 (primer año con estados línea por línea).
@@ -13,7 +12,6 @@ export type Ctx = {
   years: number[];
   cats: string[];
   issued: string;
-  version: string;
   met: (key: string) => (number | null)[];
   val: (key: string) => (number | null)[];
   num: (v: unknown) => number | null;
@@ -48,7 +46,6 @@ export function buildCtx(b: CompanyBundle, now = new Date()): Ctx {
     years,
     cats: years.map(String),
     issued,
-    version: `v${CURRENT_VERSION.version}`,
     met: (key) => rows.map((r) => num(r.metrics[key])),
     val: (key) => years.map((y) => num(b.byYear[y]?.values[key])),
     num,

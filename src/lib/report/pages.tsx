@@ -37,7 +37,7 @@ function Header({ c }: { c: Ctx }) {
 function Footer({ c }: { c: Ctx }) {
   return (
     <View fixed style={{ position: "absolute", bottom: 22, left: 40, right: 40, flexDirection: "row", justifyContent: "space-between", borderTopWidth: 0.75, borderTopColor: COLOR.rule, paddingTop: 5 }}>
-      <T style={{ fontSize: 6.5, color: COLOR.muted }}>{`Fuente: Superintendencia de Compañías, Valores y Seguros (SCVS); cálculos de Ecuador Financiero · ${c.version} · ${c.issued}`}</T>
+      <T style={{ fontSize: 6.5, color: COLOR.muted }}>{`Fuente: Superintendencia de Compañías, Valores y Seguros (SCVS); cálculos de Ecuador Financiero · ${c.issued}`}</T>
       <T style={{ fontSize: 7, color: COLOR.muted }} render={({ pageNumber, totalPages }) => `Página ${pageNumber} de ${totalPages}`} />
     </View>
   );
@@ -119,7 +119,7 @@ export function CoverPage({ c }: { c: Ctx }) {
         <View style={{ borderTopWidth: 0.75, borderTopColor: COLOR.rule, paddingTop: 8, flexDirection: "row", justifyContent: "space-between" }}>
           <View>
             <T style={{ fontSize: 8, fontFamily: FONT.sansBold }}>Elaborado por Ecuador Financiero</T>
-            <T style={{ fontSize: 7.5, color: COLOR.muted, marginTop: 2 }}>{`Fecha de emisión: ${c.issued} · Versión del sitio ${c.version}`}</T>
+            <T style={{ fontSize: 7.5, color: COLOR.muted, marginTop: 2 }}>{`Fecha de emisión: ${c.issued}`}</T>
           </View>
           <T style={{ fontSize: 7.5, color: COLOR.muted, textAlign: "right", maxWidth: 240 }}>
             Datos públicos de la Superintendencia de Compañías, Valores y Seguros. Análisis automatizado; no constituye auditoría.

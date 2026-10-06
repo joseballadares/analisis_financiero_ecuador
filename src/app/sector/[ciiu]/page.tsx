@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getCompaniesBySector, getLatestRankingYear, getSectorMedians, getTopLevelSectors } from "@/lib/db";
-import { getSectorOverview, getSectorSeries, getSectorSizeMix } from "@/lib/queries";
+import { getLatestRankingYear, getTopLevelSectors } from "@/lib/db";
+import {
+  getCompaniesBySectorCached,
+  getSectorMediansCached,
+  getSectorOverview,
+  getSectorSeries,
+  getSectorSizeMix,
+} from "@/lib/queries";
 import RatiosGrid from "@/components/RatiosGrid";
 import { BarChart, LineChart } from "@/components/charts";
 import { formatCompactMoney, formatMoney, formatPercent, segmentName, sentenceCase } from "@/lib/format";
@@ -28,8 +34,8 @@ export default async function SectorDetailPage({
     getSectorSeries(ciiu, 2018, anio),
     getSectorSizeMix(ciiu, anio),
     getSectorOverview(anio),
-    getSectorMedians(ciiu, anio),
-    getCompaniesBySector(ciiu, anio, 30),
+    getSectorMediansCached(ciiu, anio),
+    getCompaniesBySectorCached(ciiu, anio, 30),
   ]);
 
   const cur = series.find((s) => s.anio === anio);

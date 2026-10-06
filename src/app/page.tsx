@@ -7,7 +7,6 @@ import { getLatestRankingYear, getTopLevelSectors } from "@/lib/db";
 import { getProvinceStats, getSectorOverview, getTopHome, type HomeCompany } from "@/lib/queries";
 import { peekInteresting, pickFeatured } from "@/lib/interesting";
 import { formatCompactMoney, formatPercent, sentenceCase } from "@/lib/format";
-import { CURRENT_VERSION } from "@/lib/versions";
 import { PEPE_NAME, PEPE_SLUG } from "@/lib/eggs";
 import BirthdayStrip from "@/components/eggs/BirthdayStrip";
 
@@ -92,10 +91,9 @@ export default async function Home() {
         <div>
           <div className="flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-wider">
             <span className="rounded-full border border-border px-2.5 py-1 text-brand">Datos fiscales 2008–{anio} · SCVS</span>
-            <span className="rounded-full border border-border px-2.5 py-1 text-muted">v{CURRENT_VERSION.version}</span>
           </div>
           <h1 className="mt-5 text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
-            Inteligencia financiera <span className="text-brand">del Ecuador</span>
+            Información financiera <span className="text-brand">del Ecuador</span>
           </h1>
           <p className="mt-4 max-w-xl text-lg text-muted">
             Estados financieros, ratios, comparables sectoriales e informes en PDF de {cur.empresas.toLocaleString("es-EC")} compañías,

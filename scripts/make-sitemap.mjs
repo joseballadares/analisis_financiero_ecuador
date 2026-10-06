@@ -33,7 +33,7 @@ const companies = (
 await c.end();
 if (server) await server.stop().catch(() => {});
 
-const urls = ["/", "/ranking", "/sector", "/provincias", "/acerca", "/versiones", ...sectors.map((s) => `/sector/${s}`), ...[...new Set(companies)].map((r) => `/empresa/${r}`)];
+const urls = ["/", "/ranking", "/sector", "/provincias", "/acerca", ...sectors.map((s) => `/sector/${s}`), ...[...new Set(companies)].map((r) => `/empresa/${r}`)];
 const xml =
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
   urls.map((u) => `  <url><loc>${SITE}${u}</loc></url>`).join("\n") +

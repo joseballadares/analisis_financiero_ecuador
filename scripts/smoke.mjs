@@ -173,7 +173,6 @@ async function main() {
     const sectors = await page("/sector");
     await page("/provincias");
     await page("/acerca");
-    await page("/versiones");
 
     // 5. Perfil de empresa y sector
     await page(`/empresa/${top.ruc}`, { expect: [word], label: "/empresa/<RUC>  (perfil)" });

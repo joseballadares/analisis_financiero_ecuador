@@ -7,5 +7,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ results: [] });
   }
   const results = await searchCompanies(q, 15);
-  return NextResponse.json({ results });
+  // Cache solo del navegador (private): repetir la misma busqueda no vuelve a despertar la base de datos.
+  return NextResponse.json({ results }, { headers: { "Cache-Control": "private, max-age=3600" } });
 }

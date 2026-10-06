@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { CURRENT_VERSION } from "@/lib/versions";
 
 const linkCls = "text-muted transition-colors hover:text-foreground";
 const headCls = "text-[11px] font-semibold uppercase tracking-wider text-foreground";
@@ -55,19 +54,18 @@ export default function SiteFooter() {
               <li><Link href="/acerca" className={linkCls}>Acerca de</Link></li>
               <li><Link href="/acerca#metodologia" className={linkCls}>Metodología y fuentes</Link></li>
               <li><Link href="/acerca#aviso" className={linkCls}>Aviso legal</Link></li>
-              <li><Link href="/versiones" className={linkCls}>Versiones</Link></li>
             </ul>
           </div>
         </div>
       </div>
 
       <div className="mx-auto max-w-6xl border-t border-border px-4 py-4 text-xs text-muted sm:px-6">
-        © {new Date().getFullYear()} Ecuador Financiero · Datos públicos de la Superintendencia de Compañías, Valores y Seguros y del SRI ·{" "}
+        © {new Date().getFullYear()} · Datos públicos de la Superintendencia de Compañías, Valores y Seguros y del SRI ·{" "}
         <span className="group relative inline-block">
-          <Link href="/versiones" className="underline hover:text-foreground">
-            v{CURRENT_VERSION.version}
-          </Link>
-          {/* Sorpresa: al pasar el cursor (o enfocar la versión) aparece el autor, con enlace a su perfil. */}
+          <span tabIndex={0} className="cursor-default underline decoration-dotted outline-none hover:text-foreground">
+            Ecuador Financiero
+          </span>
+          {/* Sorpresa: al pasar el cursor (o enfocar el nombre) aparece el autor, con enlace a su perfil. */}
           <span className="pointer-events-none absolute bottom-full left-1/2 z-10 -translate-x-1/2 pb-2 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
             <a
               href="https://www.linkedin.com/in/joseballadares/"

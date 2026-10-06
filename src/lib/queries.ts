@@ -1,4 +1,4 @@
-import { db, VEN, type ChartOfAccountsEntryRow } from "@/lib/db";
+import { db, VEN, getCompaniesBySector, getSectorMedians, type ChartOfAccountsEntryRow } from "@/lib/db";
 import { MIN_ACTIVE_REVENUE, derivedRatios } from "@/lib/derived";
 
 const VEN_F = VEN.replace(/metrics/g, "f.metrics");
@@ -237,7 +237,7 @@ async function getSectorSeriesRaw(ciiu: string, desde: number, hasta: number): P
 }
 
 export function getSectorSeries(ciiu: string, desde: number, hasta: number): Promise<SectorSeriesRow[]> {
-  return memo(`ser:${ciiu}:${desde}:${hasta}`, () => getSectorSeriesRaw(ciiu, desde, hasta));
+  return persisted(`ser:${ciiu}:${desde}:${hasta}`, () => getSectorSeriesRaw(ciiu, desde, hasta));
 }
 
 export type SizeMixRow = { cod_segmento: number | null; empresas: number; ingresos: number };
@@ -256,7 +256,17 @@ async function getSectorSizeMixRaw(ciiu: string, anio: number): Promise<SizeMixR
 }
 
 export function getSectorSizeMix(ciiu: string, anio: number): Promise<SizeMixRow[]> {
-  return memo(`mix:${ciiu}:${anio}`, () => getSectorSizeMixRaw(ciiu, anio));
+  return persisted(`mix:${ciiu}:${anio}`, () => getSectorSizeMixRaw(ciiu, anio));
+}
+
+// Medianas y mayores empresas de un sector: son las mismas para todas las visitas de /sector/[ciiu]?anio=..., asi que
+// se guardan en la base en vez de recalcular los percentiles de 500 empresas en cada instancia fria.
+export function getSectorMediansCached(ciiu: string, anio: number) {
+  return persisted(`smed:${ciiu}:${anio}`, () => getSectorMedians(ciiu, anio));
+}
+
+export function getCompaniesBySectorCached(ciiu: string, anio: number, limit: number) {
+  return persisted(`scomp:${ciiu}:${anio}:${limit}`, () => getCompaniesBySector(ciiu, anio, limit));
 }
 
 export type SegmentShare = {
@@ -321,7 +331,13 @@ export async function getCompanyBalanceRows(expediente: number): Promise<Company
   `;
 }
 
-export async function getCatalogNames(catalogIds: number[]): Promise<Record<number, Record<string, string>>> {
+// Los catalogos de cuentas son fijos (5 catalogos, ~3.900 filas): se leen una vez por instancia del servidor.
+export function getCatalogNames(catalogIds: number[]): Promise<Record<number, Record<string, string>>> {
+  const ids = [...new Set(catalogIds)].sort((a, b) => a - b);
+  return memo(`catalogs:${ids.join(",")}`, () => getCatalogNamesRaw(ids));
+}
+
+async function getCatalogNamesRaw(catalogIds: number[]): Promise<Record<number, Record<string, string>>> {
   const database = db();
   const out: Record<number, Record<string, string>> = {};
   for (const id of catalogIds) {
@@ -346,8 +362,12 @@ export function getRankingUniverse(): Promise<Record<number, number>> {
   });
 }
 
-export async function getCiiuDescription(code: string | null): Promise<string | null> {
-  if (!code) return null;
+export function getCiiuDescription(code: string | null): Promise<string | null> {
+  if (!code) return Promise.resolve(null);
+  return memo(`ciiu:${code}`, () => getCiiuDescriptionRaw(code));
+}
+
+async function getCiiuDescriptionRaw(code: string): Promise<string | null> {
   const database = db();
   for (const c of [code, code.slice(0, 5), code.slice(0, 4)]) {
     const [row] = await database.sql<{ descripcion: string }>`SELECT descripcion FROM ciiu WHERE codigo = ${c}`;

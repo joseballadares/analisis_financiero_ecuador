@@ -4,6 +4,17 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const RELEASES: Release[] = [
   {
+    version: "0.28",
+    date: "2026-10-05",
+    title: "Más discreto y más barato de mantener",
+    changes: [
+      "Nuevo título de portada: Información financiera del Ecuador.",
+      "Historial de versiones oculto (ya no hay página /versiones ni número de versión visible, tampoco en el PDF).",
+      "Sin mapas de origen ni cabecera X-Powered-By en producción.",
+      "Pares, participación en el segmento y datos de sector se guardan en la base para no recalcularlos en cada visita.",
+    ],
+  },
+  {
     version: "0.27",
     date: "2026-09-20",
     title: "Más rápido y liviano",
